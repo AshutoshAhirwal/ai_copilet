@@ -127,9 +127,9 @@ class AgentToolRegistry {
 
     return [
       'drupal_core_version' => \Drupal::VERSION,
-      'active_modules' => $context['modules'] ?? [],
-      'content_types' => $context['content_types'] ?? [],
-      'fields_summary' => $context['fields'] ?? [],
+      'active_modules' => $context['active_modules'] ?? [],
+      'content_types' => $context['scoped_schema']['node_types'] ?? [],
+      'fields_summary' => $context['scoped_schema']['field_storages'] ?? [],
     ];
   }
 

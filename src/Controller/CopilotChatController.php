@@ -233,7 +233,7 @@ class CopilotChatController extends ControllerBase {
             $toolResult = $this->agentToolRegistry->execute($toolName, $toolArgs);
             $steps[] = ['tool' => $toolName, 'status' => 'completed'];
           }
-          catch (\Exception $e) {
+          catch (\Throwable $e) {
             $toolResult = ['error' => $e->getMessage()];
             $steps[] = ['tool' => $toolName, 'status' => 'error'];
           }

@@ -3,6 +3,7 @@
 namespace Drupal\Tests\ai_copilot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\ai_copilot\Service\AgentToolRegistry;
 use Drupal\ai_copilot\Service\CopilotLlmProvider;
 
 /**
@@ -150,6 +151,62 @@ class AgentLoopTest extends KernelTestBase {
   }
 
   /**
+   * Tests that a \TypeError from a tool is caught by the \Throwable block.
+   *
+   * \TypeError extends \Error, not \Exception, so catch (\Exception) would
+   * have let it escape and crash the loop. The loop must record it as a
+   * failed step and continue to a text reply.
+   */
+  public function testAgentLoopCatchesTypeErrorFromTool(): void {
+    $callCount = 0;
+    $llmMock = $this->createMock(CopilotLlmProvider::class);
+    $llmMock->method('sendConversation')
+      ->willReturnCallback(function (array $history, array $tools) use (&$callCount): array {
+        $callCount++;
+        if ($callCount === 1) {
+          // First call: request the site context tool.
+          return [
+            'type' => 'function_call',
+            'name' => 'get_site_context',
+            'args' => [],
+            'id' => 'call-type-error',
+          ];
+        }
+        // Second call: after the tool errored, model produces final answer.
+        return ['type' => 'text', 'text' => 'Could not read site context due to an internal error.'];
+      });
+    $this->container->set('ai_copilot.llm_provider', $llmMock);
+
+    // Override the tool registry so get_site_context throws a \TypeError.
+    $toolRegistryMock = $this->createMock(AgentToolRegistry::class);
+    $toolRegistryMock->method('getDeclarations')
+      ->willReturn([
+        [
+          'name' => 'get_site_context',
+          'description' => 'test',
+          'parameters' => ['type' => 'object', 'properties' => new \stdClass(), 'required' => []],
+        ],
+      ]);
+    $toolRegistryMock->method('execute')
+      ->willThrowException(new \TypeError('Argument 1 must be of type string, null given'));
+    $this->container->set('ai_copilot.agent_tool_registry', $toolRegistryMock);
+
+    $conversationId = 'test-typeerror-' . uniqid();
+    $reply = $this->runAgentLoop('What is on my site?', $conversationId);
+
+    $this->assertFalse($reply['error'], 'Loop must not error out on a \\TypeError — it should continue to a text reply.');
+    $this->assertCount(1, $reply['steps'], 'The failed tool call must still be recorded in steps.');
+    $this->assertEquals('get_site_context', $reply['steps'][0]['tool']);
+    $this->assertEquals('error', $reply['steps'][0]['status'], 'Step status must be "error" when \\TypeError thrown.');
+    $this->assertEquals(
+      'Could not read site context due to an internal error.',
+      $reply['reply'],
+      'Loop must continue after \\TypeError and return the LLM\'s follow-up text reply.'
+    );
+    $this->assertEquals(2, $callCount, 'LLM must be called twice: once for tool call, once for final text.');
+  }
+
+  /**
    * Runs the agent loop directly using the container services.
    *
    * This mirrors the logic in CopilotChatController::handleChat() so that the
@@ -215,7 +272,7 @@ class AgentLoopTest extends KernelTestBase {
           $toolResult = $toolRegistry->execute($result['name'], $result['args']);
           $steps[] = ['tool' => $result['name'], 'status' => 'completed'];
         }
-        catch (\Exception $e) {
+        catch (\Throwable $e) {
           $toolResult = ['error' => $e->getMessage()];
           $steps[] = ['tool' => $result['name'], 'status' => 'error'];
         }

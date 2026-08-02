@@ -155,9 +155,15 @@ class CopilotLlmProvider {
       elseif (str_starts_with($apiKey, 'sk-ant-')) {
         return $this->callAnthropicApi($apiKey, $fullSystemPrompt, $fullUserPrompt);
       }
-      // 3. Fallback to OpenAI-compatible API format (sk-*).
-      else {
+      // 3. OpenAI-compatible API keys start with "sk-" (but not "sk-ant-").
+      elseif (str_starts_with($apiKey, 'sk-')) {
         return $this->callOpenAiApi($apiKey, $fullSystemPrompt, $fullUserPrompt);
+      }
+      else {
+        throw new \InvalidArgumentException(
+          'Unrecognised API key format. Configure a Gemini (AQ.* / AIzaSy*), '
+          . 'Anthropic (sk-ant-*), or OpenAI (sk-*) key in the Key module.'
+        );
       }
     }
     catch (\Exception $e) {
@@ -420,8 +426,14 @@ class CopilotLlmProvider {
       elseif (str_starts_with($apiKey, 'sk-ant-')) {
         return $this->sendAnthropicConversation($apiKey, $history, $tools);
       }
-      else {
+      elseif (str_starts_with($apiKey, 'sk-')) {
         return $this->sendOpenAiConversation($apiKey, $history, $tools);
+      }
+      else {
+        throw new \InvalidArgumentException(
+          'Unrecognised API key format. Configure a Gemini (AQ.* / AIzaSy*), '
+          . 'Anthropic (sk-ant-*), or OpenAI (sk-*) key in the Key module.'
+        );
       }
     }
     catch (\Exception $e) {
