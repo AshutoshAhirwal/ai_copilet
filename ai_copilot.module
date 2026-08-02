@@ -32,6 +32,8 @@ function ai_copilot_page_attachments(array &$page) {
   $page['#attached']['library'][] = 'ai_copilot/chat_panel';
   $page['#attached']['drupalSettings']['aiCopilot'] = [
     'chatApiUrl' => '/admin/api/ai-copilot/chat',
+    'streamApiUrl' => '/admin/api/ai-copilot/stream',
+    'clearSessionApiUrl' => '/admin/api/ai-copilot/clear-session',
     'applyApiUrl' => '/admin/api/ai-copilot/apply',
     'revertApiUrl' => '/admin/api/ai-copilot/revert',
     'csrfToken' => $headerCsrfToken,

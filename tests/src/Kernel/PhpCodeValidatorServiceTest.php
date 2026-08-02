@@ -10,6 +10,7 @@ use Drupal\ai_copilot\Service\PhpCodeValidatorService;
  *
  * @group ai_copilot
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class PhpCodeValidatorServiceTest extends KernelTestBase {
 
   /**
@@ -24,8 +25,8 @@ class PhpCodeValidatorServiceTest extends KernelTestBase {
     /** @var \Drupal\ai_copilot\Service\PhpCodeValidatorService $validator */
     $validator = \Drupal::service('ai_copilot.php_code_validator');
 
-    // 1. Valid PHP code.
-    $validCode = "function test_valid_helper() { return TRUE; }";
+    // 1. Valid PHP code: module-prefixed name + full Drupal docblock.
+    $validCode = "/**\n * Helper function for copilot output.\n *\n * @return bool\n *   Always returns TRUE.\n */\nfunction ai_copilot_test_helper(): bool {\n  return TRUE;\n}";
     $resultValid = $validator->validateCustomCode($validCode);
 
     $this->assertTrue($resultValid['valid']);

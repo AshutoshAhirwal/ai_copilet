@@ -32,3 +32,21 @@ ai_copilot.revert_api:
     _permission: 'use ai copilot'
     _csrf_request_header_token: 'TRUE'
     _format: 'json'
+
+ai_copilot.stream_api:
+  path: '/admin/api/ai-copilot/stream'
+  defaults:
+    _controller: '\Drupal\ai_copilot\Controller\CopilotChatController::handleStream'
+  requirements:
+    _permission: 'use ai copilot'
+    _csrf_request_header_token: 'TRUE'
+  methods: [POST]
+
+ai_copilot.clear_session_api:
+  path: '/admin/api/ai-copilot/clear-session'
+  defaults:
+    _controller: '\Drupal\ai_copilot\Controller\CopilotChatController::handleClearSession'
+  requirements:
+    _permission: 'use ai copilot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'

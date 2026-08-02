@@ -10,12 +10,28 @@ use Drupal\ai_copilot\Service\ComposerPatchManagerService;
  *
  * @group ai_copilot
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class ComposerPatchManagerServiceTest extends KernelTestBase {
 
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['ai_copilot'];
+  protected static $modules = ['ai_copilot', 'system', 'file'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+    $privateDir = $this->siteDirectory . '/private';
+    @mkdir($privateDir, 0777, TRUE);
+    new \Drupal\Core\Site\Settings(array_merge(\Drupal\Core\Site\Settings::getAll(), [
+      'file_private_path' => $privateDir,
+    ]));
+    if (!in_array('private', stream_get_wrappers(), TRUE)) {
+      stream_wrapper_register('private', \Drupal\Core\StreamWrapper\PrivateStream::class);
+    }
+  }
 
   /**
    * Tests patch queuing and registration.

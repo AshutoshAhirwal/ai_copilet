@@ -10,6 +10,7 @@ use Drupal\ai_copilot\Service\PatchValidatorService;
  *
  * @group ai_copilot
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class PatchValidatorServiceTest extends KernelTestBase {
 
   /**

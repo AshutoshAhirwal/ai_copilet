@@ -13,7 +13,7 @@ class DataPrivacyManagerService {
    * @param array $rawContext
    *   The raw site context collected from site inspection tools.
    * @param string $privacyLevel
-   *   'structure_only' or 'full_context'.
+   *   One of 'structure_only' or 'full_context'.
    *
    * @return array
    *   The privacy-sanitized context array.

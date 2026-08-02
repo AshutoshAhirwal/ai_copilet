@@ -10,6 +10,7 @@ use Drupal\ai_copilot\Service\EnvironmentDetectorService;
  *
  * @group ai_copilot
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class EnvironmentDetectorServiceTest extends KernelTestBase {
 
   /**

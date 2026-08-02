@@ -2,26 +2,27 @@
 
 namespace Drupal\ai_copilot\Entity;
 
+use Drupal\Core\Entity\Attribute\ContentEntityType;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Defines the CopilotAuditLog content entity class.
- *
- * @ContentEntityType(
- *   id = "copilot_audit_log",
- *   label = @Translation("AI Copilot Audit Log"),
- *   label_collection = @Translation("AI Copilot Audit Logs"),
- *   base_table = "copilot_audit_log",
- *   entity_keys = {
- *     "id" = "id",
- *     "uuid" = "uuid",
- *     "label" = "requirement_prompt",
- *     "owner" = "uid",
- *   },
- * )
  */
+#[ContentEntityType(
+  id: 'copilot_audit_log',
+  label: new TranslatableMarkup('AI Copilot Audit Log'),
+  label_collection: new TranslatableMarkup('AI Copilot Audit Logs'),
+  base_table: 'ai_copilot_audit_log',
+  entity_keys: [
+    'id' => 'id',
+    'uuid' => 'uuid',
+    'label' => 'requirement_prompt',
+    'owner' => 'uid',
+  ],
+)]
 class CopilotAuditLog extends ContentEntityBase implements CopilotAuditLogInterface {
 
   /**

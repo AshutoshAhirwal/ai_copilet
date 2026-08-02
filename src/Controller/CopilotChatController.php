@@ -6,6 +6,8 @@ use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Yaml\Yaml;
 
 use Drupal\ai_copilot\Service\ConfigDecisionEngine;
@@ -14,7 +16,10 @@ use Drupal\ai_copilot\Service\EnvironmentDetectorService;
 use Drupal\ai_copilot\Service\MutationLockManagerService;
 use Drupal\ai_copilot\Service\SnapshotManagerService;
 use Drupal\ai_copilot\Service\ComposerPatchManagerService;
+use Drupal\ai_copilot\Service\AgentToolRegistry;
 use Drupal\ai_copilot\Service\AuditLoggerService;
+use Drupal\ai_copilot\Service\ConversationSessionService;
+use Drupal\ai_copilot\Service\CopilotLlmProvider;
 
 /**
  * Controller for AI Copilot chat and mutation API endpoints.
@@ -71,6 +76,27 @@ class CopilotChatController extends ControllerBase {
   protected $auditLogger;
 
   /**
+   * Conversation session service.
+   *
+   * @var \Drupal\ai_copilot\Service\ConversationSessionService
+   */
+  protected $conversationSession;
+
+  /**
+   * LLM provider.
+   *
+   * @var \Drupal\ai_copilot\Service\CopilotLlmProvider
+   */
+  protected $llmProvider;
+
+  /**
+   * Agent tool registry.
+   *
+   * @var \Drupal\ai_copilot\Service\AgentToolRegistry
+   */
+  protected $agentToolRegistry;
+
+  /**
    * Constructs a CopilotChatController.
    */
   public function __construct(
@@ -80,7 +106,10 @@ class CopilotChatController extends ControllerBase {
     MutationLockManagerService $mutationLockManager,
     SnapshotManagerService $snapshotManager,
     ComposerPatchManagerService $composerPatchManager,
-    AuditLoggerService $auditLogger
+    AuditLoggerService $auditLogger,
+    ConversationSessionService $conversationSession,
+    CopilotLlmProvider $llmProvider,
+    AgentToolRegistry $agentToolRegistry,
   ) {
     $this->decisionEngine = $decisionEngine;
     $this->dataPrivacyManager = $dataPrivacyManager;
@@ -89,6 +118,9 @@ class CopilotChatController extends ControllerBase {
     $this->snapshotManager = $snapshotManager;
     $this->composerPatchManager = $composerPatchManager;
     $this->auditLogger = $auditLogger;
+    $this->conversationSession = $conversationSession;
+    $this->llmProvider = $llmProvider;
+    $this->agentToolRegistry = $agentToolRegistry;
   }
 
   /**
@@ -102,36 +134,160 @@ class CopilotChatController extends ControllerBase {
       $container->get('ai_copilot.mutation_lock_manager'),
       $container->get('ai_copilot.snapshot_manager'),
       $container->get('ai_copilot.composer_patch_manager'),
-      $container->get('ai_copilot.audit_logger')
+      $container->get('ai_copilot.audit_logger'),
+      $container->get('ai_copilot.conversation_session'),
+      $container->get('ai_copilot.llm_provider'),
+      $container->get('ai_copilot.agent_tool_registry')
     );
   }
 
   /**
-   * Handles POST /admin/api/ai-copilot/chat requirements evaluation.
+   * System prompt sent once at the start of a new conversation.
+   */
+  protected const SYSTEM_PROMPT = "You are Drupal AI Copilot, an expert assistant for Drupal 11 development. "
+    . "You help developers make optimal architectural decisions following priorities: "
+    . "config-first, contrib-first, patch-not-rewrite.\n\n"
+    . "You have access to these read-only tools:\n"
+    . "- get_site_context: Read the site's Drupal version, active modules, and content types.\n"
+    . "- search_contrib_modules: Search the indexed contrib module database.\n\n"
+    . "When a developer describes a requirement:\n"
+    . "1. If the requirement is ambiguous or lacks critical details, ask ONE clarifying question "
+    . "   as plain text — no tool call needed.\n"
+    . "2. Otherwise, call get_site_context first to understand the site, then search_contrib_modules "
+    . "   if a contrib solution may exist, then give a concrete recommendation.\n"
+    . "3. Your final recommendation should specify: the architectural path "
+    . "   (config_only / contrib_patch / custom_code), the reasoning, and the specific "
+    . "   YAML, module name, or code needed.\n"
+    . "Keep responses concise and practical.";
+
+  /**
+   * Handles POST /admin/api/ai-copilot/chat — multi-turn agent loop.
+   *
+   * The agent loop:
+   * 1. Loads per-user conversation history from PrivateTempStore.
+   * 2. Appends the user's message to history.
+   * 3. Loops up to 6 iterations calling LLM → tool → LLM → ...
+   * 4. Returns the final text reply plus a trace of tool calls made this turn.
+   *
+   * Response: {error: false, reply: '...', steps: [{tool, status}], conversation_id: '...'}
    */
   public function handleChat(Request $request): JsonResponse {
     try {
-      $content = json_decode($request->getContent(), TRUE) ?: [];
-      $prompt = trim((string) ($content['prompt'] ?? ''));
+      $body = json_decode($request->getContent(), TRUE) ?: [];
+      $prompt = trim((string) ($body['prompt'] ?? ''));
+      $rawId = (string) ($body['conversation_id'] ?? '');
+      $conversationId = preg_replace('/[^a-zA-Z0-9_-]/', '', $rawId);
 
-      if (empty($prompt)) {
-        return new JsonResponse(['success' => FALSE, 'error' => 'Prompt is required.'], 400);
+      if (empty($conversationId)) {
+        $conversationId = bin2hex(random_bytes(16));
       }
 
-      $evaluation = $this->decisionEngine->evaluateRequirement($prompt);
-      $payloadPreview = $this->dataPrivacyManager->generatePayloadPreview($prompt, $evaluation);
+      if (empty($prompt)) {
+        return new JsonResponse(['error' => TRUE, 'message' => 'Prompt is required.'], 400);
+      }
 
+      // Load history and append the user's message.
+      $history = $this->conversationSession->getHistory($conversationId);
+      $isNew = empty($history);
+
+      // Prepend system prompt as the first user turn for a new conversation.
+      if ($isNew) {
+        $history[] = [
+          'role' => 'user',
+          'parts' => [['text' => self::SYSTEM_PROMPT . "\n\nDeveloper request: " . $prompt]],
+        ];
+      }
+      else {
+        $history[] = ['role' => 'user', 'parts' => [['text' => $prompt]]];
+      }
+
+      $tools = $this->agentToolRegistry->getDeclarations();
+      $steps = [];
+      $maxIterations = 6;
+
+      for ($i = 0; $i < $maxIterations; $i++) {
+        $llmResult = $this->llmProvider->sendConversation($history, $tools);
+
+        if ($llmResult['type'] === 'error') {
+          return new JsonResponse([
+            'error' => TRUE,
+            'message' => 'LLM error: ' . $llmResult['message'],
+            'steps' => $steps,
+            'conversation_id' => $conversationId,
+          ], 500);
+        }
+
+        if ($llmResult['type'] === 'function_call') {
+          $toolName = $llmResult['name'];
+          $toolArgs = $llmResult['args'];
+          $callId = $llmResult['id'];
+
+          // Append model's function-call turn to history.
+          $history[] = [
+            'role' => 'model',
+            'parts' => [['functionCall' => ['name' => $toolName, 'args' => $toolArgs, 'id' => $callId]]],
+          ];
+
+          // Execute the read-only tool.
+          try {
+            $toolResult = $this->agentToolRegistry->execute($toolName, $toolArgs);
+            $steps[] = ['tool' => $toolName, 'status' => 'completed'];
+          }
+          catch (\Exception $e) {
+            $toolResult = ['error' => $e->getMessage()];
+            $steps[] = ['tool' => $toolName, 'status' => 'error'];
+          }
+
+          // Append function-response turn to history (role:'user' per Gemini protocol).
+          $history[] = [
+            'role' => 'user',
+            'parts' => [[
+              'functionResponse' => [
+                'name' => $toolName,
+                'id' => $callId,
+                'response' => $toolResult,
+              ],
+            ],
+            ],
+          ];
+
+          // Continue the loop so the model can process the tool result.
+          continue;
+        }
+
+        // Text response — this is the final answer for this turn.
+        if ($llmResult['type'] === 'text') {
+          $reply = $llmResult['text'];
+          $history[] = ['role' => 'model', 'parts' => [['text' => $reply]]];
+          $this->conversationSession->saveHistory($conversationId, $history);
+
+          return new JsonResponse([
+            'error' => FALSE,
+            'reply' => $reply,
+            'steps' => $steps,
+            'conversation_id' => $conversationId,
+          ]);
+        }
+      }
+
+      // Iteration cap reached — stop rather than looping indefinitely.
+      $this->conversationSession->saveHistory($conversationId, $history);
       return new JsonResponse([
-        'success' => TRUE,
-        'evaluation' => $evaluation,
-        'payload_preview' => $payloadPreview,
-      ]);
+        'error' => TRUE,
+        'message' => sprintf(
+          'Agent loop reached the %d-iteration safety cap without producing a final answer. '
+          . 'This may indicate the model is repeatedly calling tools. Please try rephrasing your request.',
+          $maxIterations
+        ),
+        'steps' => $steps,
+        'conversation_id' => $conversationId,
+      ], 500);
     }
     catch (\Throwable $e) {
-      \Drupal::logger('ai_copilot')->error('Chat API exception: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('ai_copilot')->error('Chat agent loop exception: @msg', ['@msg' => $e->getMessage()]);
       return new JsonResponse([
-        'success' => FALSE,
-        'error' => 'Server Error: ' . $e->getMessage(),
+        'error' => TRUE,
+        'message' => 'Server error: ' . $e->getMessage(),
       ], 500);
     }
   }
@@ -166,6 +322,20 @@ class CopilotChatController extends ControllerBase {
       $affected = [];
       $diffContent = '';
 
+      // Pre-determine affected file paths so the snapshot captures them before mutation.
+      if ($path === 'custom_code') {
+        $appRoot = \Drupal::hasService('kernel') ? \Drupal::root() : DRUPAL_ROOT;
+        $targetCustomFile = $appRoot . '/modules/custom/ai_copilot_generated/ai_copilot_generated.module';
+        if (file_exists($targetCustomFile)) {
+          $affectedFiles[] = $targetCustomFile;
+        }
+      }
+
+      // 3. Create Rollback Snapshot BEFORE applying any mutation.
+      $auditIdPlaceholder = time();
+      $snapshotPath = $this->snapshotManager->createSnapshot($auditIdPlaceholder, $affectedFiles);
+
+      // 4. Apply mutation after snapshot is safely recorded.
       if ($path === 'contrib_patch') {
         $module = $content['module'] ?? 'focal_point';
         $patch = $content['patch_content'] ?? '';
@@ -232,19 +402,11 @@ class CopilotChatController extends ControllerBase {
         $targetCustomFile = $appRoot . '/modules/custom/ai_copilot_generated/ai_copilot_generated.module';
         @mkdir(dirname($targetCustomFile), 0755, TRUE);
 
-        if (file_exists($targetCustomFile)) {
-          $affectedFiles[] = $targetCustomFile;
-        }
-
         file_put_contents($targetCustomFile, "<?php\n\n" . ltrim($code, "<?php"));
         $affected = ['generated_custom_file' => $targetCustomFile];
       }
 
-      // 3. Create Rollback Snapshot.
-      $auditIdPlaceholder = time();
-      $snapshotPath = $this->snapshotManager->createSnapshot($auditIdPlaceholder, $affectedFiles);
-
-      // 4. Record Audit Log.
+      // 5. Record Audit Log.
       $auditId = $this->auditLogger->logAction($prompt, $path, $affected, $diffContent, $snapshotPath, 'applied');
 
       $this->mutationLockManager->releaseLock();
@@ -294,6 +456,96 @@ class CopilotChatController extends ControllerBase {
         'error' => 'Revert failed: ' . $e->getMessage(),
       ], 500);
     }
+  }
+
+  /**
+   * Handles POST /admin/api/ai-copilot/stream — SSE streaming evaluation.
+   *
+   * Emits Server-Sent Events as the AI pipeline executes so the frontend can
+   * show live progress. Event types: progress, question, result, error, done.
+   */
+  public function handleStream(Request $request): Response {
+    $content = json_decode($request->getContent(), TRUE) ?? [];
+    $prompt = trim((string) ($content['prompt'] ?? ''));
+    $rawId = (string) ($content['session_id'] ?? '');
+    $sessionId = preg_replace('/[^a-zA-Z0-9_-]/', '', $rawId);
+
+    if (empty($sessionId)) {
+      $sessionId = bin2hex(random_bytes(16));
+    }
+
+    $conversationSession = $this->conversationSession;
+    $decisionEngine = $this->decisionEngine;
+
+    $callback = function () use ($prompt, $sessionId, $conversationSession, $decisionEngine): void {
+      set_time_limit(120);
+
+      $emit = static function (string $event, array $data): void {
+        echo "event: {$event}\n";
+        echo 'data: ' . json_encode($data) . "\n\n";
+        if (ob_get_level() > 0) {
+          ob_flush();
+        }
+        flush();
+      };
+
+      if (empty($prompt)) {
+        $emit('error', ['message' => 'Prompt is required.']);
+        $emit('done', []);
+        return;
+      }
+
+      $conversationSession->addMessage($sessionId, 'user', $prompt);
+      $history = $conversationSession->getHistory($sessionId);
+
+      $emit('progress', ['message' => '🔍 Analyzing your requirement...', 'step' => 1]);
+
+      $decisionEngine->setProgressCallback(function (string $message, int $step) use ($emit): void {
+        $emit('progress', ['message' => $message, 'step' => $step]);
+      });
+
+      try {
+        $result = $decisionEngine->evaluateWithHistory($prompt, $history);
+
+        if (isset($result['type']) && $result['type'] === 'question') {
+          $conversationSession->addMessage($sessionId, 'assistant', $result['question']);
+          $emit('question', ['message' => $result['question'], 'session_id' => $sessionId]);
+        }
+        else {
+          $summary = 'Evaluation path: ' . ($result['path'] ?? 'unknown');
+          $conversationSession->addMessage($sessionId, 'assistant', $summary);
+          $emit('result', ['evaluation' => $result, 'session_id' => $sessionId]);
+        }
+      }
+      catch (\Throwable $e) {
+        \Drupal::logger('ai_copilot')->error('Stream API exception: @msg', ['@msg' => $e->getMessage()]);
+        $emit('error', ['message' => $e->getMessage()]);
+      }
+
+      $emit('done', []);
+    };
+
+    return new StreamedResponse($callback, 200, [
+      'Content-Type' => 'text/event-stream',
+      'Cache-Control' => 'no-cache, no-store',
+      'X-Accel-Buffering' => 'no',
+      'Connection' => 'keep-alive',
+    ]);
+  }
+
+  /**
+   * Handles POST /admin/api/ai-copilot/clear-session — resets conversation history.
+   */
+  public function handleClearSession(Request $request): JsonResponse {
+    $body = json_decode($request->getContent(), TRUE) ?? [];
+    $rawId = (string) ($body['conversation_id'] ?? $body['session_id'] ?? '');
+    $id = preg_replace('/[^a-zA-Z0-9_-]/', '', $rawId);
+
+    if (!empty($id)) {
+      $this->conversationSession->clearHistory($id);
+    }
+
+    return new JsonResponse(['success' => TRUE]);
   }
 
 }

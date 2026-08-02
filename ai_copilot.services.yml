@@ -15,7 +15,7 @@ services:
 
   ai_copilot.contrib_matcher:
     class: Drupal\ai_copilot\Service\ContribMatcherService
-    arguments: ['@database']
+    arguments: ['@database', '@ai_copilot.llm_provider']
 
   ai_copilot.source_fetcher:
     class: Drupal\ai_copilot\Service\ContribSourceFetcherService
@@ -56,3 +56,14 @@ services:
   ai_copilot.audit_logger:
     class: Drupal\ai_copilot\Service\AuditLoggerService
     arguments: ['@database', '@current_user']
+
+  ai_copilot.conversation_session:
+    class: Drupal\ai_copilot\Service\ConversationSessionService
+    arguments: ['@tempstore.private']
+
+  ai_copilot.agent_tool_registry:
+    class: Drupal\ai_copilot\Service\AgentToolRegistry
+    arguments:
+      - '@ai_copilot.site_context_assembler'
+      - '@ai_copilot.contrib_matcher'
+      - '@config.factory'

@@ -6,6 +6,37 @@
  */
 
 /**
+ * Implements hook_install().
+ *
+ * Adds FULLTEXT indexes on MySQL/MariaDB to enable MATCH...AGAINST Stage 1
+ * full-text search in ContribMatcherService. Silently skipped on other DB drivers.
+ */
+function ai_copilot_install() {
+  $db = \Drupal::database();
+  if ($db->driver() !== 'mysql') {
+    return;
+  }
+
+  // Resolve the actual table name (Drupal prefixing is handled by the DB layer).
+  $tablePrefix = $db->tablePrefix();
+  $tableName = $tablePrefix . 'ai_copilot_contrib_index';
+
+  try {
+    $db->query(
+      'ALTER TABLE {ai_copilot_contrib_index} ADD FULLTEXT INDEX ft_contrib_search (title, description, readme_summary)'
+    );
+  }
+  catch (\Exception $e) {
+    // Index may already exist or storage engine may not support FULLTEXT.
+    // Log a notice but do not prevent module installation.
+    \Drupal::logger('ai_copilot')->notice(
+      'Could not add FULLTEXT index on ai_copilot_contrib_index (@msg). PHP term-frequency fallback will be used.',
+      ['@msg' => $e->getMessage()]
+    );
+  }
+}
+
+/**
  * Implements hook_schema().
  */
 function ai_copilot_schema() {

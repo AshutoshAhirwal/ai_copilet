@@ -10,6 +10,7 @@ use Drupal\ai_copilot\Service\ContribMatcherService;
  *
  * @group ai_copilot
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class ContribMatcherServiceTest extends KernelTestBase {
 
   /**

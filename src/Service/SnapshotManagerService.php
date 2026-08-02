@@ -2,6 +2,7 @@
 
 namespace Drupal\ai_copilot\Service;
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Extension\ModuleInstallerInterface;
@@ -38,7 +39,7 @@ class SnapshotManagerService {
   public function __construct(
     Connection $database,
     ConfigFactoryInterface $configFactory,
-    ModuleInstallerInterface $moduleInstaller
+    ModuleInstallerInterface $moduleInstaller,
   ) {
     $this->database = $database;
     $this->configFactory = $configFactory;
@@ -59,7 +60,7 @@ class SnapshotManagerService {
   public function createSnapshot(int $auditId, array $affectedFiles = []): string {
     $snapshotDir = 'private://ai_copilot/snapshots/' . $auditId;
     $fileSystem = \Drupal::service('file_system');
-    $fileSystem->prepareDirectory($snapshotDir, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+    $fileSystem->prepareDirectory($snapshotDir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
 
     $realDir = $fileSystem->realpath($snapshotDir);
 
@@ -119,7 +120,7 @@ class SnapshotManagerService {
       return ['success' => FALSE, 'message' => 'Snapshot directory or config backup file missing.'];
     }
 
-    // 1. Module Uninstallation if a new contrib module was installed.
+    // 1a. Module Uninstallation if a new contrib module was installed.
     $affected = json_decode((string) $record->affected_config_or_files, TRUE) ?: [];
     if (!empty($affected['installed_module'])) {
       $moduleToUninstall = $affected['installed_module'];
@@ -130,6 +131,21 @@ class SnapshotManagerService {
         catch (\Exception $e) {
           \Drupal::logger('ai_copilot')->warning('Revert module uninstall failed: @msg', ['@msg' => $e->getMessage()]);
         }
+      }
+    }
+
+    // 1b. Delete any entity (content type, taxonomy, role) that was CREATED by
+    // the mutation. Config-restore alone cannot remove added entities.
+    if (!empty($affected['created_content_type'])) {
+      try {
+        $typeStorage = \Drupal::entityTypeManager()->getStorage('node_type');
+        $nodeType = $typeStorage->load($affected['created_content_type']);
+        if ($nodeType) {
+          $nodeType->delete();
+        }
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('ai_copilot')->warning('Revert content type deletion failed: @msg', ['@msg' => $e->getMessage()]);
       }
     }
 

@@ -10,6 +10,7 @@ use Drupal\ai_copilot\Service\MutationLockManagerService;
  *
  * @group ai_copilot
  */
+#[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class MutationLockManagerServiceTest extends KernelTestBase {
 
   /**

@@ -2,6 +2,7 @@
 
 namespace Drupal\ai_copilot\Service;
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Queue\QueueFactory;
 
 /**
@@ -51,7 +52,7 @@ class ComposerPatchManagerService {
 
     $patchDir = 'private://ai_copilot/patches';
     $fileSystem = \Drupal::service('file_system');
-    $fileSystem->prepareDirectory($patchDir, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY | \Drupal\Core\File\FileSystemInterface::MODIFY_PERMISSIONS);
+    $fileSystem->prepareDirectory($patchDir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
 
     $fileName = sprintf('%s-%s.patch', $projectName, substr(md5($patchContent), 0, 8));
     $patchUri = $patchDir . '/' . $fileName;

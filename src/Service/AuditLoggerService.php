@@ -57,7 +57,7 @@ class AuditLoggerService {
     array $affected = [],
     string $diff = '',
     string $snapshotPath = '',
-    string $status = 'applied'
+    string $status = 'applied',
   ): int {
     return (int) $this->database->insert('ai_copilot_audit_log')
       ->fields([

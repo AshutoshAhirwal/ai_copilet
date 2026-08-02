@@ -37,7 +37,7 @@ class SiteContextAssembler {
   public function __construct(
     ModuleHandlerInterface $moduleHandler,
     ConfigFactoryInterface $configFactory,
-    DataPrivacyManagerService $dataPrivacyManager
+    DataPrivacyManagerService $dataPrivacyManager,
   ) {
     $this->moduleHandler = $moduleHandler;
     $this->configFactory = $configFactory;
@@ -48,7 +48,7 @@ class SiteContextAssembler {
    * Assembles a structured site context array for prompt injection.
    *
    * @param string $privacyLevel
-   *   'structure_only' or 'full_context'.
+   *   One of 'structure_only' or 'full_context'.
    * @param int $maxTokenCap
    *   Maximum token cap for config context (default 8000).
    *

@@ -3,7 +3,6 @@
 namespace Drupal\ai_copilot\Service;
 
 use Symfony\Component\Process\Process;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 
 /**
  * Service for dry-run patch validation using Symfony Process with array arguments.
