@@ -1,0 +1,34 @@
+ai_copilot.settings:
+  path: '/admin/config/development/ai-copilot'
+  defaults:
+    _form: '\Drupal\ai_copilot\Form\CopilotSettingsForm'
+    _title: 'AI Copilot Settings'
+  requirements:
+    _permission: 'administer ai copilot'
+
+ai_copilot.chat_api:
+  path: '/admin/api/ai-copilot/chat'
+  defaults:
+    _controller: '\Drupal\ai_copilot\Controller\CopilotChatController::handleChat'
+  requirements:
+    _permission: 'use ai copilot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'
+
+ai_copilot.apply_api:
+  path: '/admin/api/ai-copilot/apply'
+  defaults:
+    _controller: '\Drupal\ai_copilot\Controller\CopilotChatController::handleApply'
+  requirements:
+    _permission: 'use ai copilot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'
+
+ai_copilot.revert_api:
+  path: '/admin/api/ai-copilot/revert'
+  defaults:
+    _controller: '\Drupal\ai_copilot\Controller\CopilotChatController::handleRevert'
+  requirements:
+    _permission: 'use ai copilot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'

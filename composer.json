@@ -1,0 +1,31 @@
+{
+    "name": "drupal/ai_copilot",
+    "type": "drupal-module",
+    "description": "Developer-mode AI assistant providing contrib-first, config-first, and patch-not-rewrite architecture guidance and safe human-in-the-loop site mutations.",
+    "keywords": ["Drupal", "AI", "Copilot", "MCP", "Architecture", "Contrib-First"],
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://www.drupal.org/project/ai_copilot",
+    "minimum-stability": "alpha",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.3",
+        "drupal/core": "^10.3 || ^11.0",
+        "drupal/tool": "^1.0",
+        "drupal/mcp_tools": "^1.0@beta",
+        "drupal/mcp_server": "^1.0@alpha",
+        "drupal/mcp_client": "^1.0@alpha",
+        "drupal/key": "^1.15",
+        "cweagans/composer-patches": "^1.7 || ^2.0",
+        "symfony/process": "^6.4 || ^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Drupal\\ai_copilot\\": "src/"
+        }
+    },
+    "extra": {
+        "drupal": {
+            "version": "1.0.0-alpha1"
+        }
+    }
+}

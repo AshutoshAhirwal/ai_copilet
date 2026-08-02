@@ -1,0 +1,9 @@
+use ai copilot:
+  title: 'Use AI Copilot'
+  description: 'Access the in-admin AI Copilot developer assistant panel and trigger site inspection or mutation workflows.'
+  restrict access: true
+
+administer ai copilot:
+  title: 'Administer AI Copilot'
+  description: 'Configure Developer Mode, security presets, provider settings, and data privacy levels for AI Copilot.'
+  restrict access: true

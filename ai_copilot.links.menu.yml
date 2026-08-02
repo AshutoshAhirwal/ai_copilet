@@ -1,0 +1,6 @@
+ai_copilot.settings:
+  title: 'AI Copilot'
+  description: 'Configure Developer Mode, security presets, provider settings, and data privacy options.'
+  parent: system.admin_config_development
+  route_name: ai_copilot.settings
+  weight: 50

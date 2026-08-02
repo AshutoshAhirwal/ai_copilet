@@ -1,0 +1,22 @@
+ai_copilot.settings:
+  type: config_object
+  label: 'AI Copilot Settings'
+  mapping:
+    developer_mode:
+      type: boolean
+      label: 'Developer Mode Enabled'
+    security_preset:
+      type: string
+      label: 'Security Mode Preset'
+    provider_key_id:
+      type: string
+      label: 'Key Module Credential ID'
+    data_privacy_level:
+      type: string
+      label: 'Outbound Data Privacy Level'
+    allow_production_mutation:
+      type: boolean
+      label: 'Allow Mutations in Production Environment'
+    max_token_context:
+      type: integer
+      label: 'Maximum Token Context Window'

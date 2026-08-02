@@ -1,0 +1,58 @@
+services:
+  ai_copilot.environment_detector:
+    class: Drupal\ai_copilot\Service\EnvironmentDetectorService
+
+  ai_copilot.data_privacy_manager:
+    class: Drupal\ai_copilot\Service\DataPrivacyManagerService
+
+  ai_copilot.site_context_assembler:
+    class: Drupal\ai_copilot\Service\SiteContextAssembler
+    arguments: ['@module_handler', '@config.factory', '@ai_copilot.data_privacy_manager']
+
+  ai_copilot.contrib_indexer:
+    class: Drupal\ai_copilot\Service\ContribIndexerService
+    arguments: ['@database', '@http_client']
+
+  ai_copilot.contrib_matcher:
+    class: Drupal\ai_copilot\Service\ContribMatcherService
+    arguments: ['@database']
+
+  ai_copilot.source_fetcher:
+    class: Drupal\ai_copilot\Service\ContribSourceFetcherService
+    arguments: ['@http_client']
+
+  ai_copilot.patch_validator:
+    class: Drupal\ai_copilot\Service\PatchValidatorService
+
+  ai_copilot.php_code_validator:
+    class: Drupal\ai_copilot\Service\PhpCodeValidatorService
+
+  ai_copilot.composer_patch_manager:
+    class: Drupal\ai_copilot\Service\ComposerPatchManagerService
+    arguments: ['@queue']
+
+  ai_copilot.llm_provider:
+    class: Drupal\ai_copilot\Service\CopilotLlmProvider
+    arguments: ['@http_client']
+
+  ai_copilot.config_decision_engine:
+    class: Drupal\ai_copilot\Service\ConfigDecisionEngine
+    arguments:
+      - '@ai_copilot.site_context_assembler'
+      - '@ai_copilot.contrib_matcher'
+      - '@ai_copilot.source_fetcher'
+      - '@ai_copilot.patch_validator'
+      - '@ai_copilot.php_code_validator'
+      - '@ai_copilot.llm_provider'
+
+  ai_copilot.snapshot_manager:
+    class: Drupal\ai_copilot\Service\SnapshotManagerService
+    arguments: ['@database', '@config.factory', '@module_installer']
+
+  ai_copilot.mutation_lock_manager:
+    class: Drupal\ai_copilot\Service\MutationLockManagerService
+    arguments: ['@lock']
+
+  ai_copilot.audit_logger:
+    class: Drupal\ai_copilot\Service\AuditLoggerService
+    arguments: ['@database', '@current_user']

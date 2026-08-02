@@ -1,0 +1,170 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the AI Copilot module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function ai_copilot_schema() {
+  $schema = [];
+
+  $schema['ai_copilot_contrib_index'] = [
+    'description' => 'Local index of drupal.org contrib module metadata for matching.',
+    'fields' => [
+      'project_name' => [
+        'description' => 'Machine name of the project (e.g. focal_point).',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ],
+      'title' => [
+        'description' => 'Human readable title of the project.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'description' => [
+        'description' => 'Project description text.',
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'categories' => [
+        'description' => 'Comma separated categories/tags.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ],
+      'maintenance_status' => [
+        'description' => 'Maintenance status (Actively maintained, Seeking co-maintainers, Unsupported).',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+      ],
+      'development_status' => [
+        'description' => 'Development status (Under active development, Maintenance fixes only).',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+      ],
+      'security_coverage' => [
+        'description' => '1 if covered by security advisory policy, 0 otherwise.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'usage_count' => [
+        'description' => 'Reported usage count from drupal.org.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'core_compatibility' => [
+        'description' => 'Semver constraint string for core compatibility (e.g. ^10 || ^11).',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '^10 || ^11',
+      ],
+      'last_release' => [
+        'description' => 'Unix timestamp of the latest release.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'readme_summary' => [
+        'description' => 'Parsed README text summary.',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+      ],
+      'indexed_at' => [
+        'description' => 'Unix timestamp when this record was indexed.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['project_name'],
+    'indexes' => [
+      'usage_idx' => ['usage_count'],
+      'last_release_idx' => ['last_release'],
+      'security_idx' => ['security_coverage'],
+    ],
+  ];
+
+  $schema['ai_copilot_audit_log'] = [
+    'description' => 'Audit log of AI Copilot prompts, decisions, applied changes, and reverts.',
+    'fields' => [
+      'id' => [
+        'description' => 'Primary Key: Unique audit log entry ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'uid' => [
+        'description' => 'User ID of developer who approved or initiated action.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'timestamp' => [
+        'description' => 'Unix timestamp of the action.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'requirement_prompt' => [
+        'description' => 'Original developer requirement prompt.',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ],
+      'chosen_path' => [
+        'description' => 'Architectural path: config_only, contrib_patch, custom_code.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ],
+      'affected_config_or_files' => [
+        'description' => 'JSON serialized array of affected config keys or file paths.',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+      ],
+      'diff_content' => [
+        'description' => 'YAML diff, patch content, or custom code diff.',
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => FALSE,
+      ],
+      'snapshot_path' => [
+        'description' => 'Path to the rollback snapshot directory.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ],
+      'status' => [
+        'description' => 'Status: applied, rejected, edited, reverted.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => 'applied',
+      ],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      'uid_idx' => ['uid'],
+      'timestamp_idx' => ['timestamp'],
+      'status_idx' => ['status'],
+    ],
+  ];
+
+  return $schema;
+}
