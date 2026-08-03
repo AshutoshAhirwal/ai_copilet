@@ -3,7 +3,6 @@
 namespace Drupal\Tests\ai_copilot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\ai_copilot\Service\MutationLockManagerService;
 
 /**
  * Kernel test for MutationLockManagerService.

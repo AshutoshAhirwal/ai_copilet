@@ -11,6 +11,12 @@ ai_copilot.settings:
     provider_key_id:
       type: string
       label: 'Key Module Credential ID'
+    llm_provider:
+      type: string
+      label: 'LLM Provider'
+    model_name:
+      type: string
+      label: 'Model Name Override'
     data_privacy_level:
       type: string
       label: 'Outbound Data Privacy Level'

@@ -48,10 +48,10 @@ class ConfigDecisionEngineTest extends KernelTestBase {
       ->execute();
 
     // Stub 1: LLM provider — deterministic output, zero live API calls.
-    // generateCompletion() is called twice per evaluateRequirement():
-    //   a) By ContribMatcherService::getLlmRelevanceScores() — systemPrompt
-    //      contains "Score each module from 0.0 to 1.0".
-    //   b) By ConfigDecisionEngine itself for the path decision.
+    // generateCompletion() is called twice per evaluateRequirement(): a) by
+    // ContribMatcherService::getLlmRelevanceScores() — systemPrompt contains
+    // "Score each module from 0.0 to 1.0"; b) by ConfigDecisionEngine itself
+    // for the path decision.
     $llmStub = $this->createMock(CopilotLlmProvider::class);
     $llmStub->method('generateCompletion')
       ->willReturnCallback(

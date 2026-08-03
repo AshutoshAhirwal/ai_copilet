@@ -102,7 +102,7 @@
             if (data.error) {
               appendMessage('error', escapeHtml(data.message || 'An error occurred.'));
             } else {
-              appendAgentReply(data.reply || '', data.steps || [], data.conversation_id || conversationId);
+              appendAgentReply(data.reply || '', data.steps || [], data.conversation_id || conversationId, !!data.demo_mode);
               // Update conversation ID in case the server assigned one.
               if (data.conversation_id) conversationId = data.conversation_id;
             }
@@ -183,7 +183,7 @@
           return wrap;
         }
 
-        function appendAgentReply(replyText, steps, convId) {
+        function appendAgentReply(replyText, steps, convId, demoMode) {
           var wrap = document.createElement('div');
           wrap.className = 'chat-msg chat-msg--ai';
 
@@ -193,6 +193,16 @@
 
           var bubble = document.createElement('div');
           bubble.className = 'chat-msg__bubble';
+
+          // No LLM provider/key is configured - this reply is a template,
+          // not a real model response. Label it clearly rather than let it
+          // pass as a genuine answer.
+          if (demoMode) {
+            var demoBadge = document.createElement('div');
+            demoBadge.className = 'copilot-demo-badge';
+            demoBadge.textContent = '⚠ Demo Mode — no LLM provider configured. This is a template response, not real AI output. Configure a provider in AI Copilot Settings.';
+            bubble.appendChild(demoBadge);
+          }
 
           // Steps trace (collapsed toggle) — shown only if tools were actually called.
           if (steps && steps.length > 0) {

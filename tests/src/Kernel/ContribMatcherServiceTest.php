@@ -3,7 +3,6 @@
 namespace Drupal\Tests\ai_copilot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\ai_copilot\Service\ContribMatcherService;
 
 /**
  * Kernel test for ContribMatcherService Semver hard filtering and scoring.

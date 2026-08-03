@@ -502,6 +502,17 @@
   color: #fca5a5;
 }
 
+/* --- Demo mode badge --------------------------------------- */
+.copilot-demo-badge {
+  font-size: 0.78rem;
+  background: #2a1e05;
+  border: 1px solid #92640a;
+  color: #fbbf24;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
 /* --- Footer / input area ---------------------------------- */
 .copilot-footer {
   padding: 14px 16px;

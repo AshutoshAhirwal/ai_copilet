@@ -1,6 +1,8 @@
 developer_mode: false
 security_preset: 'config_only'
 provider_key_id: ''
+llm_provider: ''
+model_name: ''
 data_privacy_level: 'structure_only'
 allow_production_mutation: false
 max_token_context: 32000

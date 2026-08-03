@@ -57,11 +57,31 @@ class CopilotSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('security_preset') ?: 'config_only',
     ];
 
+    $form['llm_provider'] = [
+      '#type' => 'select',
+      '#title' => $this->t('LLM Provider'),
+      '#description' => $this->t('Explicitly select which provider the API key below belongs to. AI Copilot never guesses this from the key format.'),
+      '#options' => [
+        '' => $this->t('- Select a provider -'),
+        'gemini' => $this->t('Google Gemini'),
+        'anthropic' => $this->t('Anthropic Claude'),
+        'openai' => $this->t('OpenAI'),
+      ],
+      '#default_value' => $config->get('llm_provider') ?: '',
+    ];
+
     $form['provider_key_id'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Key Module Credential ID'),
-      '#description' => $this->t('Machine name of the key stored in Key module (e.g., anthropic_api_key or openai_api_key).'),
+      '#description' => $this->t('Machine name of the key stored in Key module (e.g., anthropic_api_key or openai_api_key). Must match the provider selected above.'),
       '#default_value' => $config->get('provider_key_id') ?: '',
+    ];
+
+    $form['model_name'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Model Name Override'),
+      '#description' => $this->t('Optional. Leave blank to use the default model for the selected provider (Gemini: gemini-2.0-flash, Anthropic: claude-3-5-sonnet-20241022, OpenAI: gpt-4o).'),
+      '#default_value' => $config->get('model_name') ?: '',
     ];
 
     $form['data_privacy_level'] = [
@@ -102,7 +122,9 @@ class CopilotSettingsForm extends ConfigFormBase {
     $this->config('ai_copilot.settings')
       ->set('developer_mode', (bool) $form_state->getValue('developer_mode'))
       ->set('security_preset', $form_state->getValue('security_preset'))
+      ->set('llm_provider', $form_state->getValue('llm_provider'))
       ->set('provider_key_id', trim((string) $form_state->getValue('provider_key_id')))
+      ->set('model_name', trim((string) $form_state->getValue('model_name')))
       ->set('data_privacy_level', $form_state->getValue('data_privacy_level'))
       ->set('allow_production_mutation', (bool) $form_state->getValue('allow_production_mutation'))
       ->set('max_token_context', (int) $form_state->getValue('max_token_context'))

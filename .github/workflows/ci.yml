@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  phpcs:
+    name: Coding standards (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3', '8.4']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Drupal Coder (phpcs standards)
+        run: composer global require drupal/coder --with-all-dependencies --no-interaction
+
+      - name: Add global Composer bin to PATH
+        run: echo "$(composer global config bin-dir --absolute)" >> "$GITHUB_PATH"
+
+      - name: Run phpcs (Drupal, DrupalPractice)
+        run: phpcs --standard=Drupal,DrupalPractice --extensions=php,module,install,inc,yml .
+
+  phpunit:
+    name: Tests (PHP ${{ matrix.php-version }}, Drupal core ${{ matrix.core-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3', '8.4']
+        core-version: ['10.3.x-dev', '11.1.x-dev']
+    steps:
+      - name: Checkout module
+        uses: actions/checkout@v4
+        with:
+          path: ai_copilot_checkout
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo_sqlite, mbstring, gd, dom, curl
+          coverage: none
+          tools: composer:v2
+
+      - name: Scaffold a throwaway Drupal site
+        run: |
+          composer create-project drupal/recommended-project:${{ matrix.core-version }} drupal_site --no-interaction --stability dev
+          cp -r ai_copilot_checkout drupal_site/web/modules/custom/ai_copilot
+
+      - name: Require module dependencies
+        working-directory: drupal_site
+        run: |
+          composer config --no-plugins allow-plugins.cweagans/composer-patches true
+          composer require drupal/tool drupal/key cweagans/composer-patches --no-interaction --with-all-dependencies
+
+      - name: Run PHPUnit (kernel + unit tests)
+        working-directory: drupal_site
+        env:
+          SIMPLETEST_DB: sqlite://localhost/sites/default/files/db.sqlite
+          SYMFONY_DEPRECATIONS_HELPER: disabled
+        run: |
+          mkdir -p sites/default/files
+          vendor/bin/phpunit -c web/core web/modules/custom/ai_copilot/tests

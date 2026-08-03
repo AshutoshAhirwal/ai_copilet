@@ -11,9 +11,6 @@
         "php": ">=8.3",
         "drupal/core": "^10.3 || ^11.0",
         "drupal/tool": "^1.0",
-        "drupal/mcp_tools": "^1.0@beta",
-        "drupal/mcp_server": "^1.0@alpha",
-        "drupal/mcp_client": "^1.0@alpha",
         "drupal/key": "^1.15",
         "cweagans/composer-patches": "^1.7 || ^2.0",
         "symfony/process": "^6.4 || ^7.0"

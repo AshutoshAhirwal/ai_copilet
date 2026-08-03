@@ -4,7 +4,5 @@ description: 'Developer-mode AI assistant providing contrib-first, config-first,
 package: Development
 core_version_requirement: '^10.3 || ^11'
 dependencies:
-  - drupal:config
   - tool:tool
-  - mcp_tools:mcp_tools
   - key:key

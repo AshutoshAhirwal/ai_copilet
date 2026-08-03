@@ -18,7 +18,8 @@ class ContribScorerTest extends UnitTestCase {
     $relevance = 1.0;
     $security = 1.0;
     $usageCount = 100000;
-    $usageNorm = min(1.0, log10($usageCount) / 6.0); // 5/6 = ~0.833
+    // 5/6 = ~0.833
+    $usageNorm = min(1.0, log10($usageCount) / 6.0);
     $recency = 1.0;
 
     $score = (0.50 * $relevance) + (0.20 * $security) + (0.15 * $usageNorm) + (0.15 * $recency);

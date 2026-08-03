@@ -2,8 +2,9 @@
 
 namespace Drupal\Tests\ai_copilot\Kernel;
 
+use Drupal\Core\StreamWrapper\PrivateStream;
+use Drupal\Core\Site\Settings;
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\ai_copilot\Service\ComposerPatchManagerService;
 
 /**
  * Kernel test for ComposerPatchManagerService.
@@ -25,11 +26,11 @@ class ComposerPatchManagerServiceTest extends KernelTestBase {
     parent::setUp();
     $privateDir = $this->siteDirectory . '/private';
     @mkdir($privateDir, 0777, TRUE);
-    new \Drupal\Core\Site\Settings(array_merge(\Drupal\Core\Site\Settings::getAll(), [
+    new Settings(array_merge(Settings::getAll(), [
       'file_private_path' => $privateDir,
     ]));
     if (!in_array('private', stream_get_wrappers(), TRUE)) {
-      stream_wrapper_register('private', \Drupal\Core\StreamWrapper\PrivateStream::class);
+      stream_wrapper_register('private', PrivateStream::class);
     }
   }
 

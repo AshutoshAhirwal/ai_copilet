@@ -2,6 +2,7 @@
 
 namespace Drupal\ai_copilot\Controller;
 
+use Drupal\Core\Config\Schema\SchemaCheckTrait;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,11 +21,27 @@ use Drupal\ai_copilot\Service\AgentToolRegistry;
 use Drupal\ai_copilot\Service\AuditLoggerService;
 use Drupal\ai_copilot\Service\ConversationSessionService;
 use Drupal\ai_copilot\Service\CopilotLlmProvider;
+use Drupal\ai_copilot\Service\PhpCodeValidatorService;
 
 /**
  * Controller for AI Copilot chat and mutation API endpoints.
  */
 class CopilotChatController extends ControllerBase {
+
+  use SchemaCheckTrait;
+
+  /**
+   * Config object name prefixes AI Copilot is allowed to create or update.
+   *
+   * Deliberately narrow: only simple config entities that generateDynamic
+   * fallback / LLM proposals are designed to produce. Anything else is
+   * refused rather than trusting a client- or LLM-supplied config name.
+   */
+  protected const ALLOWED_CONFIG_PREFIXES = [
+    'node.type.',
+    'taxonomy.vocabulary.',
+    'user.role.',
+  ];
 
   /**
    * Config decision engine.
@@ -97,6 +114,15 @@ class CopilotChatController extends ControllerBase {
   protected $agentToolRegistry;
 
   /**
+   * PHP code validator.
+   *
+   * Used to re-validate custom code immediately before it is written to disk.
+   *
+   * @var \Drupal\ai_copilot\Service\PhpCodeValidatorService
+   */
+  protected $phpCodeValidator;
+
+  /**
    * Constructs a CopilotChatController.
    */
   public function __construct(
@@ -110,6 +136,7 @@ class CopilotChatController extends ControllerBase {
     ConversationSessionService $conversationSession,
     CopilotLlmProvider $llmProvider,
     AgentToolRegistry $agentToolRegistry,
+    PhpCodeValidatorService $phpCodeValidator,
   ) {
     $this->decisionEngine = $decisionEngine;
     $this->dataPrivacyManager = $dataPrivacyManager;
@@ -121,6 +148,7 @@ class CopilotChatController extends ControllerBase {
     $this->conversationSession = $conversationSession;
     $this->llmProvider = $llmProvider;
     $this->agentToolRegistry = $agentToolRegistry;
+    $this->phpCodeValidator = $phpCodeValidator;
   }
 
   /**
@@ -137,7 +165,8 @@ class CopilotChatController extends ControllerBase {
       $container->get('ai_copilot.audit_logger'),
       $container->get('ai_copilot.conversation_session'),
       $container->get('ai_copilot.llm_provider'),
-      $container->get('ai_copilot.agent_tool_registry')
+      $container->get('ai_copilot.agent_tool_registry'),
+      $container->get('ai_copilot.php_code_validator')
     );
   }
 
@@ -266,6 +295,7 @@ class CopilotChatController extends ControllerBase {
             'reply' => $reply,
             'steps' => $steps,
             'conversation_id' => $conversationId,
+            'demo_mode' => (bool) ($llmResult['demo_mode'] ?? FALSE),
           ]);
         }
       }
@@ -350,59 +380,107 @@ class CopilotChatController extends ControllerBase {
 
         try {
           $parsedConfig = Yaml::parse($yamlStr);
-          if (is_array($parsedConfig)) {
-            $typeName = $parsedConfig['type'] ?? $parsedConfig['id'] ?? NULL;
-            $label = $parsedConfig['name'] ?? ucfirst((string) $typeName);
-
-            // If applying a Drupal NodeType (Content Type) definition:
-            if ($typeName && (isset($parsedConfig['type']) || str_contains($yamlStr, 'node.type') || isset($parsedConfig['id']))) {
-              $storage = \Drupal::entityTypeManager()->getStorage('node_type');
-              /** @var \Drupal\node\NodeTypeInterface|null $existing */
-              $existing = $storage->load($typeName);
-
-              if (!$existing) {
-                /** @var \Drupal\node\NodeTypeInterface $nodeType */
-                $nodeType = $storage->create([
-                  'type' => $typeName,
-                  'name' => $label,
-                  'description' => $parsedConfig['description'] ?? '',
-                  'new_revision' => TRUE,
-                  'preview_mode' => 1,
-                  'display_submitted' => TRUE,
-                ]);
-                $nodeType->save();
-                if (function_exists('node_add_body_field')) {
-                  node_add_body_field($nodeType);
-                }
-              }
-              else {
-                $existing->set('name', $label)->save();
-              }
-
-              \Drupal::service('router.builder')->rebuild();
-              $affected = ['created_content_type' => $typeName];
-            }
-            else {
-              // General Drupal config import.
-              $configName = $parsedConfig['name'] ?? ('node.type.' . ($typeName ?: 'custom'));
-              $this->configFactory()->getEditable($configName)->setData($parsedConfig)->save();
-              $affected = ['imported_config' => $configName];
-            }
-          }
         }
         catch (\Exception $e) {
-          \Drupal::logger('ai_copilot')->warning('YAML config parse error: @msg', ['@msg' => $e->getMessage()]);
+          $this->mutationLockManager->releaseLock();
+          return new JsonResponse([
+            'success' => FALSE,
+            'error' => 'Invalid configuration YAML: ' . $e->getMessage(),
+          ], 400);
+        }
+
+        if (!is_array($parsedConfig)) {
+          $this->mutationLockManager->releaseLock();
+          return new JsonResponse([
+            'success' => FALSE,
+            'error' => 'Configuration YAML did not produce a valid structure.',
+          ], 400);
+        }
+
+        // Never trust a client- or LLM-supplied config object name. Derive
+        // it ourselves from the data shape, then check it against the
+        // explicit allowlist below.
+        $configName = $this->deriveAllowlistedConfigName($parsedConfig);
+        if ($configName === NULL) {
+          $this->mutationLockManager->releaseLock();
+          return new JsonResponse([
+            'success' => FALSE,
+            'error' => sprintf(
+              'Refusing to apply: this configuration object is not on the allowed list (%s).',
+              implode(', ', array_map(fn($p) => $p . '*', self::ALLOWED_CONFIG_PREFIXES))
+            ),
+          ], 403);
+        }
+
+        $schemaResult = $this->checkConfigSchema(\Drupal::service('config.typed'), $configName, $parsedConfig);
+        if ($schemaResult !== TRUE) {
+          $this->mutationLockManager->releaseLock();
+          $errorMessages = is_array($schemaResult) ? implode('; ', $schemaResult) : 'No schema found for this configuration object.';
+          return new JsonResponse([
+            'success' => FALSE,
+            'error' => 'Configuration failed schema validation: ' . $errorMessages,
+          ], 400);
+        }
+
+        if (str_starts_with($configName, 'node.type.')) {
+          $typeName = substr($configName, strlen('node.type.'));
+          $label = $parsedConfig['name'] ?? ucfirst($typeName);
+
+          $storage = \Drupal::entityTypeManager()->getStorage('node_type');
+          /** @var \Drupal\node\NodeTypeInterface|null $existing */
+          $existing = $storage->load($typeName);
+
+          if (!$existing) {
+            /** @var \Drupal\node\NodeTypeInterface $nodeType */
+            $nodeType = $storage->create([
+              'type' => $typeName,
+              'name' => $label,
+              'description' => $parsedConfig['description'] ?? '',
+              'new_revision' => TRUE,
+              'preview_mode' => 1,
+              'display_submitted' => TRUE,
+            ]);
+            $nodeType->save();
+            if (function_exists('node_add_body_field')) {
+              node_add_body_field($nodeType);
+            }
+          }
+          else {
+            $existing->set('name', $label)->save();
+          }
+
+          \Drupal::service('router.builder')->rebuild();
+          $affected = ['created_content_type' => $typeName];
+        }
+        else {
+          // Vocabulary / role, or any other allowlisted simple config entity:
+          // schema-validated above, safe to write directly.
+          $this->configFactory()->getEditable($configName)->setData($parsedConfig)->save();
+          $affected = ['imported_config' => $configName];
         }
       }
       elseif ($path === 'custom_code') {
         $code = $content['custom_code'] ?? '';
         $diffContent = $code;
 
+        // Re-validate the EXACT code about to be written, immediately before
+        // writing it - never trust validation performed at an earlier step
+        // (e.g. preview time), since the client controls this request body.
+        $validation = $this->phpCodeValidator->validateCustomCode($code);
+        if (!$validation['valid']) {
+          $this->mutationLockManager->releaseLock();
+          return new JsonResponse([
+            'success' => FALSE,
+            'error' => 'Custom code failed validation and was not written: ' . implode('; ', $validation['errors']),
+          ], 400);
+        }
+
         $appRoot = \Drupal::hasService('kernel') ? \Drupal::root() : DRUPAL_ROOT;
         $targetCustomFile = $appRoot . '/modules/custom/ai_copilot_generated/ai_copilot_generated.module';
         @mkdir(dirname($targetCustomFile), 0755, TRUE);
 
-        file_put_contents($targetCustomFile, "<?php\n\n" . ltrim($code, "<?php"));
+        $body = preg_replace('/^<\?php\s*/', '', $code);
+        file_put_contents($targetCustomFile, "<?php\n\n" . $body);
         $affected = ['generated_custom_file' => $targetCustomFile];
       }
 
@@ -428,9 +506,41 @@ class CopilotChatController extends ControllerBase {
   }
 
   /**
+   * Derives an allowlisted config object name from parsed config data.
+   *
+   * The config object name is never taken from client- or LLM-supplied
+   * strings (e.g. a 'name' key in the payload); it is always reconstructed
+   * from a recognised, narrow set of data shapes and checked against
+   * self::ALLOWED_CONFIG_PREFIXES.
+   *
+   * @param array $parsedConfig
+   *   Parsed configuration YAML data.
+   *
+   * @return string|null
+   *   The allowlisted config object name, or NULL if the data does not
+   *   match a recognised, allowed shape.
+   */
+  protected function deriveAllowlistedConfigName(array $parsedConfig): ?string {
+    if (isset($parsedConfig['vid'])) {
+      $vid = preg_replace('/[^a-z0-9_]/', '', strtolower((string) $parsedConfig['vid']));
+      return $vid !== '' ? 'taxonomy.vocabulary.' . $vid : NULL;
+    }
+    if (isset($parsedConfig['permissions']) && isset($parsedConfig['id'])) {
+      $rid = preg_replace('/[^a-z0-9_]/', '', strtolower((string) $parsedConfig['id']));
+      return $rid !== '' ? 'user.role.' . $rid : NULL;
+    }
+    if (isset($parsedConfig['type'])) {
+      $type = preg_replace('/[^a-z0-9_]/', '', strtolower((string) $parsedConfig['type']));
+      return $type !== '' ? 'node.type.' . $type : NULL;
+    }
+    return NULL;
+  }
+
+  /**
    * Handles POST /admin/api/ai-copilot/revert action.
    */
   public function handleRevert(Request $request): JsonResponse {
+    $lockAcquired = FALSE;
     try {
       $content = json_decode($request->getContent(), TRUE) ?: [];
       $auditId = (int) ($content['audit_id'] ?? 0);
@@ -439,7 +549,22 @@ class CopilotChatController extends ControllerBase {
         return new JsonResponse(['success' => FALSE, 'error' => 'Valid audit_id is required.'], 400);
       }
 
+      // Concurrency Lock Protection, matching handleApply()'s pattern — a
+      // revert mutates config/files just like an apply does, and must not
+      // race with a concurrent apply or another revert.
+      if (!$this->mutationLockManager->acquireLock(30.0)) {
+        return new JsonResponse([
+          'success' => FALSE,
+          'error' => 'Another mutation is currently in progress. Please wait for it to complete.',
+        ], 409);
+      }
+      $lockAcquired = TRUE;
+
       $result = $this->snapshotManager->revertMutation($auditId);
+
+      $this->mutationLockManager->releaseLock();
+      $lockAcquired = FALSE;
+
       if (!$result['success']) {
         return new JsonResponse(['success' => FALSE, 'error' => $result['message']], 400);
       }
@@ -450,6 +575,9 @@ class CopilotChatController extends ControllerBase {
       ]);
     }
     catch (\Throwable $e) {
+      if ($lockAcquired) {
+        $this->mutationLockManager->releaseLock();
+      }
       \Drupal::logger('ai_copilot')->error('Revert API exception: @msg', ['@msg' => $e->getMessage()]);
       return new JsonResponse([
         'success' => FALSE,

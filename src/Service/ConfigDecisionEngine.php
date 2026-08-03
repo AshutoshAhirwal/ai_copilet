@@ -78,7 +78,7 @@ class ConfigDecisionEngine {
   /**
    * Registers a callback to receive real-time progress events during evaluation.
    *
-   * The callback signature is: function(string $message, int $step): void
+   * The callback signature is: function(string $message, int $step): void.
    *
    * @param callable $callback
    *   Progress event handler.
@@ -167,6 +167,7 @@ class ConfigDecisionEngine {
       'candidates' => $candidates,
       'validation_status' => 'Ready to Apply',
       'validation_details' => 'No errors detected.',
+      'demo_mode' => (bool) ($parsed['demo_mode'] ?? FALSE),
     ];
 
     $this->emitProgress('🔬 Validating output...', 4);
@@ -214,7 +215,7 @@ class ConfigDecisionEngine {
     $privacyLevel = $config->get('data_privacy_level') ?: 'structure_only';
 
     // 1. Assemble site context.
-    $context = $this->siteContextAssembler->assembleContext($privacyLevel);
+    $this->siteContextAssembler->assembleContext($privacyLevel);
 
     // 2. Match candidate contrib modules.
     $candidates = $this->contribMatcher->matchCandidates($requirement, \Drupal::VERSION, 5);
@@ -238,6 +239,7 @@ class ConfigDecisionEngine {
       'candidates' => $candidates,
       'validation_status' => 'Ready to Apply',
       'validation_details' => 'No errors detected.',
+      'demo_mode' => (bool) ($parsed['demo_mode'] ?? FALSE),
     ];
 
     if ($path === 'contrib_patch') {

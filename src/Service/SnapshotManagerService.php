@@ -65,8 +65,12 @@ class SnapshotManagerService {
     $realDir = $fileSystem->realpath($snapshotDir);
 
     // 1. Export active configuration snapshot.
+    //
+    // The full config list is captured (no artificial cap) so that a revert
+    // can restore every config object that existed before the mutation, not
+    // just an arbitrary first slice of them.
     $activeConfig = [];
-    $names = array_slice($this->configFactory->listAll(), 0, 50);
+    $names = $this->configFactory->listAll();
     foreach ($names as $name) {
       $activeConfig[$name] = $this->configFactory->get($name)->get();
     }
