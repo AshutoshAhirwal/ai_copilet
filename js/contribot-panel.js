@@ -250,8 +250,56 @@
           return labels[name] || name;
         }
 
+        // Structured evaluation replies (e.g. Demo Mode's template generator,
+        // or an LLM that follows the decision-path JSON shape) come back as a
+        // JSON object string rather than conversational markdown. Detect that
+        // shape so it isn't dumped on screen as raw, unparsed JSON text with
+        // literal "\n" escape sequences instead of real line breaks.
+        function tryParseStructuredReply(text) {
+          if (!text) return null;
+          var trimmed = text.trim();
+          if (trimmed.charAt(0) !== '{') return null;
+          try {
+            var parsed = JSON.parse(trimmed);
+          } catch (e) {
+            return null;
+          }
+          if (!parsed || typeof parsed !== 'object') return null;
+          // Require at least one field we know how to render — otherwise
+          // this is some unrelated JSON-looking text, not a structured reply.
+          if (!('reasoning' in parsed) && !('config_yaml' in parsed)
+            && !('patch_content' in parsed) && !('custom_code' in parsed)) {
+            return null;
+          }
+          return parsed;
+        }
+
+        // Returns {type, content} for whichever code field a structured
+        // reply carries, matching the config_only/contrib_patch/custom_code
+        // path vocabulary used elsewhere (doApply(), server-side handleApply()).
+        function structuredCodeSection(parsed) {
+          if (parsed.config_yaml) return { type: 'config_yaml', content: String(parsed.config_yaml) };
+          if (parsed.patch_content) return { type: 'patch', content: String(parsed.patch_content) };
+          if (parsed.custom_code) return { type: 'custom_code', content: String(parsed.custom_code) };
+          return null;
+        }
+
         function formatReply(text) {
-          // Convert markdown-style code blocks to <pre><code> and escape other content.
+          var structured = tryParseStructuredReply(text);
+          if (structured) {
+            var html = '';
+            if (structured.reasoning) {
+              html += escapeHtml(String(structured.reasoning)).replace(/\n/g, '<br>');
+            }
+            var codeSection = structuredCodeSection(structured);
+            if (codeSection) {
+              html += '<pre class="result-code">' + escapeHtml(codeSection.content) + '</pre>';
+            }
+            return html;
+          }
+
+          // Plain/markdown text — convert fenced code blocks to <pre><code>
+          // and escape everything else.
           var parts = text.split(/(```[\s\S]*?```)/g);
           return parts.map(function (part) {
             if (part.startsWith('```')) {
@@ -262,9 +310,17 @@
           }).join('');
         }
 
-        // Detect if the reply text contains YAML or code that could be applied.
+        // Detect if the reply contains YAML or code that could be applied —
+        // either a structured JSON reply's code field, or a markdown-fenced
+        // block in a conversational text reply.
         function extractApplySection(text) {
           if (!text) return null;
+
+          var structured = tryParseStructuredReply(text);
+          if (structured) {
+            return structuredCodeSection(structured);
+          }
+
           var yamlMatch = text.match(/```ya?ml\n([\s\S]*?)```/i);
           if (yamlMatch) return { type: 'config_yaml', content: yamlMatch[1].trim() };
           var phpMatch = text.match(/```php\n([\s\S]*?)```/i);
