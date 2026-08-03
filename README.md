@@ -1,15 +1,15 @@
-# Drupal AI Copilot (`ai_copilot`)
+# Contribot (`contribot`)
 
-[![CI](https://github.com/AshutoshAhirwal/ai_copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/AshutoshAhirwal/ai_copilot/actions/workflows/ci.yml)
+[![CI](https://github.com/AshutoshAhirwal/contribot/actions/workflows/ci.yml/badge.svg)](https://github.com/AshutoshAhirwal/contribot/actions/workflows/ci.yml)
 [![License: GPL v2+](https://img.shields.io/badge/License-GPL%20v2%2B-blue.svg)](LICENSE.txt)
 
-**Drupal AI Copilot** is a developer-mode assistant that lives inside a Drupal site, understands that specific site deeply, and helps developers implement requirements the **"Drupal Way"** — **contrib-first**, **config-first**, and **patch-not-rewrite** — instead of blindly writing custom code like generic AI coding tools do.
+**Contribot** is a developer-mode assistant that lives inside a Drupal site, understands that specific site deeply, and helps developers implement requirements the **"Drupal Way"** — **contrib-first**, **config-first**, and **patch-not-rewrite** — instead of blindly writing custom code like generic AI coding tools do.
 
 It is a **bring-your-own-API-key (BYOK)** module: you connect your own Google Gemini, Anthropic Claude, or OpenAI API key, and every request goes directly from your server to that provider. Nothing is proxied through the module maintainer.
 
 ## ⚠️ Before you install this
 
-AI Copilot can **propose and, with your explicit approval, apply mutations to a live Drupal site's configuration and codebase** (content types, taxonomy vocabularies, roles, contrib module installs with patches, and generated custom code). Every mutation is human-approved, snapshotted, and revertible — see [SECURITY.md](SECURITY.md) for exactly what it can do and what gates each capability — but you are responsible for:
+Contribot can **propose and, with your explicit approval, apply mutations to a live Drupal site's configuration and codebase** (content types, taxonomy vocabularies, roles, contrib module installs with patches, and generated custom code). Every mutation is human-approved, snapshotted, and revertible — see [SECURITY.md](SECURITY.md) for exactly what it can do and what gates each capability — but you are responsible for:
 
 - **Testing on a staging/local environment first**, not a production site, especially while you're still learning how it behaves.
 - Reviewing what your chosen LLM provider does with the data described in [PRIVACY.md](PRIVACY.md) before enabling it on a site with sensitive data.
@@ -21,10 +21,10 @@ This software is distributed **WITHOUT ANY WARRANTY**, to the extent permitted b
 ## Key Principles & Architecture
 
 1. **Contrib-First Thinking**:
-   If a maintained contrib module covers most of a requirement, `ai_copilot` recommends installing that module plus a scoped patch for the gap rather than building custom code.
+   If a maintained contrib module covers most of a requirement, `contribot` recommends installing that module plus a scoped patch for the gap rather than building custom code.
 
 2. **Config vs. Code Judgment**:
-   Many Drupal requirements can be solved by Configuration Management alone (fields, content types, view modes, permissions, Views, workflows). `ai_copilot` prioritizes exportable YAML configuration over unnecessary custom PHP.
+   Many Drupal requirements can be solved by Configuration Management alone (fields, content types, view modes, permissions, Views, workflows). `contribot` prioritizes exportable YAML configuration over unnecessary custom PHP.
 
 3. **Reusing Ecosystem Infrastructure**:
    Built on top of **`drupal/tool`** (Tool API) for its site-inspection tool plugins, and the **Key** module for credential storage, rather than reinventing plugin discovery or secret management.
@@ -37,12 +37,12 @@ This software is distributed **WITHOUT ANY WARRANTY**, to the extent permitted b
 ## Component Architecture
 
 - **`SiteContextAssembler`**: Packages site core version, active modules, composer locks, custom module inventories, and scoped config schema into token-budgeted prompt context (capped at 32k tokens).
-- **`ContribIndexerService` & `ContribMatcherService`**: Populates local database index `{ai_copilot_contrib_index}` from drupal.org API. Filters candidates via pure PHP Semver `Composer\Semver\Semver::satisfies()`, followed by Min-Max normalized hybrid DB/LLM relevance scoring.
-- **`ContribSourceFetcherService`**: Dynamically downloads exact candidate release source code into `private://ai_copilot/staging/{module}` at patch generation time.
+- **`ContribIndexerService` & `ContribMatcherService`**: Populates local database index `{contribot_contrib_index}` from drupal.org API. Filters candidates via pure PHP Semver `Composer\Semver\Semver::satisfies()`, followed by Min-Max normalized hybrid DB/LLM relevance scoring.
+- **`ContribSourceFetcherService`**: Dynamically downloads exact candidate release source code into `private://contribot/staging/{module}` at patch generation time.
 - **`PatchValidatorService` & `PhpCodeValidatorService`**: Executes dry-run `git apply --check` and `php -l` / `phpcs` checks using type-safe Symfony Process array arguments prior to presenting proposals, and again immediately before anything is written to disk.
-- **`ComposerPatchManagerService`**: Saves validated `.patch` files into `private://ai_copilot/patches/`, registers them in root `composer.json`'s `extra.patches` section, and enqueues background `composer update` jobs via Drupal Queue API.
-- **`SnapshotManagerService`**: Creates pre-mutation configuration snapshots (`config_before.json`, covering the site's full config, not a partial slice) and file backups in `private://ai_copilot/snapshots/`. Uninstalls newly installed modules and restores active configuration on revert.
-- **`MutationLockManagerService`**: Acquires exclusive locks via Drupal Lock API (`\Drupal::lock()`) with key `ai_copilot_mutation_lock` to prevent concurrent mutation race conditions (covers both apply and revert).
+- **`ComposerPatchManagerService`**: Saves validated `.patch` files into `private://contribot/patches/`, registers them in root `composer.json`'s `extra.patches` section, and enqueues background `composer update` jobs via Drupal Queue API.
+- **`SnapshotManagerService`**: Creates pre-mutation configuration snapshots (`config_before.json`, covering the site's full config, not a partial slice) and file backups in `private://contribot/snapshots/`. Uninstalls newly installed modules and restores active configuration on revert.
+- **`MutationLockManagerService`**: Acquires exclusive locks via Drupal Lock API (`\Drupal::lock()`) with key `contribot_mutation_lock` to prevent concurrent mutation race conditions (covers both apply and revert).
 - **`EnvironmentDetectorService`**: Detects production environments (`Settings::get('environment') === 'production'`) and hard-disables mutations by default.
 - **`DataPrivacyManagerService`**: Enforces `structure_only` privacy (stripping node content, user records, and field values) and renders an inspectable `[View Payload]` preview toggle.
 
@@ -68,16 +68,16 @@ This is the exact sequence to go from a fresh install to a working chat session.
 
 1. **Install the module and its dependencies:**
    ```
-   composer require drupal/ai_copilot
-   drush en ai_copilot key tool -y
+   composer require drupal/contribot
+   drush en contribot key tool -y
    ```
 
 2. **Add your LLM provider's API key to the Key module:**
    - Go to `/admin/config/system/keys/add`.
    - Choose a **Key type** of *Authentication* (or *Unstructured text*), give it a machine name you'll recognize (e.g. `gemini_api_key`), paste your API key as the **Key value**, and save.
 
-3. **Configure AI Copilot:**
-   - Go to `/admin/config/development/ai-copilot`.
+3. **Configure Contribot:**
+   - Go to `/admin/config/development/contribot`.
    - Check **Enable Developer Mode**.
    - Choose a **Security Preset** — start with *Read-Only* while you're evaluating the module; move to *Config-Only* or *Full Mutation* once you're comfortable with what it proposes (see [SECURITY.md](SECURITY.md) for exactly what each preset unlocks).
    - Set **LLM Provider** to match the key you added (Gemini / Anthropic Claude / OpenAI) — this must be selected explicitly; it is not guessed from the key.
@@ -87,11 +87,11 @@ This is the exact sequence to go from a fresh install to a working chat session.
    - Save.
 
 4. **Grant the permission:**
-   - Go to `/admin/people/permissions` and grant **Use AI Copilot** to the roles that should see the assistant (this permission is deliberately marked "restrict access" and granted to no role by default).
+   - Go to `/admin/people/permissions` and grant **Use Contribot** to the roles that should see the assistant (this permission is deliberately marked "restrict access" and granted to no role by default).
 
 5. **Use it:**
-   - Reload any admin page. The **⚡ AI Copilot** drawer button appears for users with the permission.
-   - Describe a requirement in plain language. AI Copilot will ask a clarifying question if needed, then recommend a `config_only`, `contrib_patch`, or `custom_code` path with reasoning.
+   - Reload any admin page. The **⚡ Contribot** drawer button appears for users with the permission.
+   - Describe a requirement in plain language. Contribot will ask a clarifying question if needed, then recommend a `config_only`, `contrib_patch`, or `custom_code` path with reasoning.
    - Review the diff/YAML/code shown, then use **[Apply Changes]** to apply it (a rollback snapshot is taken first automatically) or **[Revert Last Change]** afterward if you change your mind.
 
 If no provider is configured yet, the assistant runs in a clearly-labeled **Demo Mode**, returning template responses instead of real model output — useful for exploring the UI before you have a key handy, but never mistake it for a real recommendation.

@@ -1,10 +1,10 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\ai_copilot\Service\AgentToolRegistry;
-use Drupal\ai_copilot\Service\CopilotLlmProvider;
+use Drupal\contribot\Service\AgentToolRegistry;
+use Drupal\contribot\Service\CopilotLlmProvider;
 
 /**
  * Kernel test for the agent loop in CopilotChatController.
@@ -16,7 +16,7 @@ use Drupal\ai_copilot\Service\CopilotLlmProvider;
  *   2. The 6-iteration safety cap stops an infinite tool-calling sequence and
  *      returns an error rather than looping forever.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class AgentLoopTest extends KernelTestBase {
@@ -24,14 +24,14 @@ class AgentLoopTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['system', 'user', 'field', 'node', 'ai_copilot'];
+  protected static $modules = ['system', 'user', 'field', 'node', 'contribot'];
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->installSchema('ai_copilot', ['ai_copilot_contrib_index']);
+    $this->installSchema('contribot', ['contribot_contrib_index']);
     // No data seeding needed — mocked LLM never hits the DB for these tests.
   }
 
@@ -60,10 +60,10 @@ class AgentLoopTest extends KernelTestBase {
         // Second call: model has received the tool result and provides a final answer.
         return ['type' => 'text', 'text' => 'Config-only solution recommended.'];
       });
-    $this->container->set('ai_copilot.llm_provider', $llmMock);
+    $this->container->set('contribot.llm_provider', $llmMock);
 
-    /** @var \Drupal\ai_copilot\Service\ConversationSessionService $session */
-    $session = $this->container->get('ai_copilot.conversation_session');
+    /** @var \Drupal\contribot\Service\ConversationSessionService $session */
+    $session = $this->container->get('contribot.conversation_session');
     $conversationId = 'test-conv-' . uniqid();
 
     // Simulate what the controller does when handleChat() is called.
@@ -100,7 +100,7 @@ class AgentLoopTest extends KernelTestBase {
         // Always return a function call — never a final text response.
         return ['type' => 'function_call', 'name' => 'get_site_context', 'args' => [], 'id' => 'call-' . $callCount];
       });
-    $this->container->set('ai_copilot.llm_provider', $llmMock);
+    $this->container->set('contribot.llm_provider', $llmMock);
 
     $conversationId = 'test-cap-' . uniqid();
     $reply = $this->runAgentLoop('Some requirement', $conversationId);
@@ -126,7 +126,7 @@ class AgentLoopTest extends KernelTestBase {
         $receivedHistories[] = $history;
         return ['type' => 'text', 'text' => 'Understood, proceeding.'];
       });
-    $this->container->set('ai_copilot.llm_provider', $llmMock);
+    $this->container->set('contribot.llm_provider', $llmMock);
 
     $conversationId = 'test-mem-' . uniqid();
 
@@ -175,7 +175,7 @@ class AgentLoopTest extends KernelTestBase {
         // Second call: after the tool errored, model produces final answer.
         return ['type' => 'text', 'text' => 'Could not read site context due to an internal error.'];
       });
-    $this->container->set('ai_copilot.llm_provider', $llmMock);
+    $this->container->set('contribot.llm_provider', $llmMock);
 
     // Override the tool registry so get_site_context throws a \TypeError.
     $toolRegistryMock = $this->createMock(AgentToolRegistry::class);
@@ -189,7 +189,7 @@ class AgentLoopTest extends KernelTestBase {
       ]);
     $toolRegistryMock->method('execute')
       ->willThrowException(new \TypeError('Argument 1 must be of type string, null given'));
-    $this->container->set('ai_copilot.agent_tool_registry', $toolRegistryMock);
+    $this->container->set('contribot.agent_tool_registry', $toolRegistryMock);
 
     $conversationId = 'test-typeerror-' . uniqid();
     $reply = $this->runAgentLoop('What is on my site?', $conversationId);
@@ -221,17 +221,17 @@ class AgentLoopTest extends KernelTestBase {
    *   {error, reply?, message?, steps, conversation_id}
    */
   protected function runAgentLoop(string $prompt, string $conversationId): array {
-    /** @var \Drupal\ai_copilot\Service\CopilotLlmProvider $llm */
-    $llm = $this->container->get('ai_copilot.llm_provider');
-    /** @var \Drupal\ai_copilot\Service\AgentToolRegistry $toolRegistry */
-    $toolRegistry = $this->container->get('ai_copilot.agent_tool_registry');
-    /** @var \Drupal\ai_copilot\Service\ConversationSessionService $session */
-    $session = $this->container->get('ai_copilot.conversation_session');
+    /** @var \Drupal\contribot\Service\CopilotLlmProvider $llm */
+    $llm = $this->container->get('contribot.llm_provider');
+    /** @var \Drupal\contribot\Service\AgentToolRegistry $toolRegistry */
+    $toolRegistry = $this->container->get('contribot.agent_tool_registry');
+    /** @var \Drupal\contribot\Service\ConversationSessionService $session */
+    $session = $this->container->get('contribot.conversation_session');
 
     $history = $session->getHistory($conversationId);
     $isNew = empty($history);
 
-    $systemPrompt = "You are Drupal AI Copilot. Help with Drupal development decisions.";
+    $systemPrompt = "You are Contribot. Help with Drupal development decisions.";
     if ($isNew) {
       $history[] = ['role' => 'user', 'parts' => [['text' => $systemPrompt . "\n\nDeveloper request: " . $prompt]]];
     }

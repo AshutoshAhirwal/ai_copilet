@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Database\Connection;
 use GuzzleHttp\ClientInterface;
@@ -46,7 +46,7 @@ class ContribIndexerService {
 
     try {
       $response = $this->httpClient->request('GET', $url, [
-        'headers' => ['User-Agent' => 'Drupal-AI-Copilot/1.0'],
+        'headers' => ['User-Agent' => 'Drupal-Contribot/1.0'],
         'timeout' => 15,
       ]);
 
@@ -66,7 +66,7 @@ class ContribIndexerService {
           continue;
         }
 
-        $this->database->merge('ai_copilot_contrib_index')
+        $this->database->merge('contribot_contrib_index')
           ->key(['project_name' => $projectName])
           ->fields([
             'title' => substr((string) ($item['title'] ?? $projectName), 0, 255),
@@ -89,7 +89,7 @@ class ContribIndexerService {
       return $count;
     }
     catch (\Exception $e) {
-      \Drupal::logger('ai_copilot')->error('Contrib indexing failed: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->error('Contrib indexing failed: @msg', ['@msg' => $e->getMessage()]);
       return 0;
     }
   }

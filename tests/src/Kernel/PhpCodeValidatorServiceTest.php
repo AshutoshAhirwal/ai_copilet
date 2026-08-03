@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Kernel test for PhpCodeValidatorService.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class PhpCodeValidatorServiceTest extends KernelTestBase {
@@ -15,17 +15,17 @@ class PhpCodeValidatorServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['ai_copilot'];
+  protected static $modules = ['contribot'];
 
   /**
    * Tests PHP syntax validation.
    */
   public function testValidateCustomCodeSyntax(): void {
-    /** @var \Drupal\ai_copilot\Service\PhpCodeValidatorService $validator */
-    $validator = \Drupal::service('ai_copilot.php_code_validator');
+    /** @var \Drupal\contribot\Service\PhpCodeValidatorService $validator */
+    $validator = \Drupal::service('contribot.php_code_validator');
 
     // 1. Valid PHP code: module-prefixed name + full Drupal docblock.
-    $validCode = "/**\n * Helper function for copilot output.\n *\n * @return bool\n *   Always returns TRUE.\n */\nfunction ai_copilot_test_helper(): bool {\n  return TRUE;\n}";
+    $validCode = "/**\n * Helper function for copilot output.\n *\n * @return bool\n *   Always returns TRUE.\n */\nfunction contribot_test_helper(): bool {\n  return TRUE;\n}";
     $resultValid = $validator->validateCustomCode($validCode);
 
     $this->assertTrue($resultValid['valid']);

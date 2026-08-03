@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Kernel test for PatchValidatorService.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class PatchValidatorServiceTest extends KernelTestBase {
@@ -15,14 +15,14 @@ class PatchValidatorServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['ai_copilot'];
+  protected static $modules = ['contribot'];
 
   /**
    * Tests patch validation status results.
    */
   public function testValidatePatchDryRun(): void {
-    /** @var \Drupal\ai_copilot\Service\PatchValidatorService $validator */
-    $validator = \Drupal::service('ai_copilot.patch_validator');
+    /** @var \Drupal\contribot\Service\PatchValidatorService $validator */
+    $validator = \Drupal::service('contribot.patch_validator');
 
     $tempDir = sys_get_temp_dir();
     $patchContent = "diff --git a/test.txt b/test.txt\n--- a/test.txt\n+++ b/test.txt\n@@ -0,0 +1 @@\n+Hello World\n";

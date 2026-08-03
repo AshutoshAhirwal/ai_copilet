@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Controller;
+namespace Drupal\contribot\Controller;
 
 use Drupal\Core\Config\Schema\SchemaCheckTrait;
 use Drupal\Core\Controller\ControllerBase;
@@ -11,27 +11,27 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Yaml\Yaml;
 
-use Drupal\ai_copilot\Service\ConfigDecisionEngine;
-use Drupal\ai_copilot\Service\DataPrivacyManagerService;
-use Drupal\ai_copilot\Service\EnvironmentDetectorService;
-use Drupal\ai_copilot\Service\MutationLockManagerService;
-use Drupal\ai_copilot\Service\SnapshotManagerService;
-use Drupal\ai_copilot\Service\ComposerPatchManagerService;
-use Drupal\ai_copilot\Service\AgentToolRegistry;
-use Drupal\ai_copilot\Service\AuditLoggerService;
-use Drupal\ai_copilot\Service\ConversationSessionService;
-use Drupal\ai_copilot\Service\CopilotLlmProvider;
-use Drupal\ai_copilot\Service\PhpCodeValidatorService;
+use Drupal\contribot\Service\ConfigDecisionEngine;
+use Drupal\contribot\Service\DataPrivacyManagerService;
+use Drupal\contribot\Service\EnvironmentDetectorService;
+use Drupal\contribot\Service\MutationLockManagerService;
+use Drupal\contribot\Service\SnapshotManagerService;
+use Drupal\contribot\Service\ComposerPatchManagerService;
+use Drupal\contribot\Service\AgentToolRegistry;
+use Drupal\contribot\Service\AuditLoggerService;
+use Drupal\contribot\Service\ConversationSessionService;
+use Drupal\contribot\Service\CopilotLlmProvider;
+use Drupal\contribot\Service\PhpCodeValidatorService;
 
 /**
- * Controller for AI Copilot chat and mutation API endpoints.
+ * Controller for Contribot chat and mutation API endpoints.
  */
 class CopilotChatController extends ControllerBase {
 
   use SchemaCheckTrait;
 
   /**
-   * Config object name prefixes AI Copilot is allowed to create or update.
+   * Config object name prefixes Contribot is allowed to create or update.
    *
    * Deliberately narrow: only simple config entities that generateDynamic
    * fallback / LLM proposals are designed to produce. Anything else is
@@ -46,70 +46,70 @@ class CopilotChatController extends ControllerBase {
   /**
    * Config decision engine.
    *
-   * @var \Drupal\ai_copilot\Service\ConfigDecisionEngine
+   * @var \Drupal\contribot\Service\ConfigDecisionEngine
    */
   protected $decisionEngine;
 
   /**
    * Data privacy manager.
    *
-   * @var \Drupal\ai_copilot\Service\DataPrivacyManagerService
+   * @var \Drupal\contribot\Service\DataPrivacyManagerService
    */
   protected $dataPrivacyManager;
 
   /**
    * Environment detector.
    *
-   * @var \Drupal\ai_copilot\Service\EnvironmentDetectorService
+   * @var \Drupal\contribot\Service\EnvironmentDetectorService
    */
   protected $environmentDetector;
 
   /**
    * Mutation lock manager.
    *
-   * @var \Drupal\ai_copilot\Service\MutationLockManagerService
+   * @var \Drupal\contribot\Service\MutationLockManagerService
    */
   protected $mutationLockManager;
 
   /**
    * Snapshot manager.
    *
-   * @var \Drupal\ai_copilot\Service\SnapshotManagerService
+   * @var \Drupal\contribot\Service\SnapshotManagerService
    */
   protected $snapshotManager;
 
   /**
    * Composer patch manager.
    *
-   * @var \Drupal\ai_copilot\Service\ComposerPatchManagerService
+   * @var \Drupal\contribot\Service\ComposerPatchManagerService
    */
   protected $composerPatchManager;
 
   /**
    * Audit logger.
    *
-   * @var \Drupal\ai_copilot\Service\AuditLoggerService
+   * @var \Drupal\contribot\Service\AuditLoggerService
    */
   protected $auditLogger;
 
   /**
    * Conversation session service.
    *
-   * @var \Drupal\ai_copilot\Service\ConversationSessionService
+   * @var \Drupal\contribot\Service\ConversationSessionService
    */
   protected $conversationSession;
 
   /**
    * LLM provider.
    *
-   * @var \Drupal\ai_copilot\Service\CopilotLlmProvider
+   * @var \Drupal\contribot\Service\CopilotLlmProvider
    */
   protected $llmProvider;
 
   /**
    * Agent tool registry.
    *
-   * @var \Drupal\ai_copilot\Service\AgentToolRegistry
+   * @var \Drupal\contribot\Service\AgentToolRegistry
    */
   protected $agentToolRegistry;
 
@@ -118,7 +118,7 @@ class CopilotChatController extends ControllerBase {
    *
    * Used to re-validate custom code immediately before it is written to disk.
    *
-   * @var \Drupal\ai_copilot\Service\PhpCodeValidatorService
+   * @var \Drupal\contribot\Service\PhpCodeValidatorService
    */
   protected $phpCodeValidator;
 
@@ -156,24 +156,24 @@ class CopilotChatController extends ControllerBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('ai_copilot.config_decision_engine'),
-      $container->get('ai_copilot.data_privacy_manager'),
-      $container->get('ai_copilot.environment_detector'),
-      $container->get('ai_copilot.mutation_lock_manager'),
-      $container->get('ai_copilot.snapshot_manager'),
-      $container->get('ai_copilot.composer_patch_manager'),
-      $container->get('ai_copilot.audit_logger'),
-      $container->get('ai_copilot.conversation_session'),
-      $container->get('ai_copilot.llm_provider'),
-      $container->get('ai_copilot.agent_tool_registry'),
-      $container->get('ai_copilot.php_code_validator')
+      $container->get('contribot.config_decision_engine'),
+      $container->get('contribot.data_privacy_manager'),
+      $container->get('contribot.environment_detector'),
+      $container->get('contribot.mutation_lock_manager'),
+      $container->get('contribot.snapshot_manager'),
+      $container->get('contribot.composer_patch_manager'),
+      $container->get('contribot.audit_logger'),
+      $container->get('contribot.conversation_session'),
+      $container->get('contribot.llm_provider'),
+      $container->get('contribot.agent_tool_registry'),
+      $container->get('contribot.php_code_validator')
     );
   }
 
   /**
    * System prompt sent once at the start of a new conversation.
    */
-  protected const SYSTEM_PROMPT = "You are Drupal AI Copilot, an expert assistant for Drupal 11 development. "
+  protected const SYSTEM_PROMPT = "You are Contribot, an expert assistant for Drupal 11 development. "
     . "You help developers make optimal architectural decisions following priorities: "
     . "config-first, contrib-first, patch-not-rewrite.\n\n"
     . "You have access to these read-only tools:\n"
@@ -190,7 +190,7 @@ class CopilotChatController extends ControllerBase {
     . "Keep responses concise and practical.";
 
   /**
-   * Handles POST /admin/api/ai-copilot/chat — multi-turn agent loop.
+   * Handles POST /admin/api/contribot/chat — multi-turn agent loop.
    *
    * The agent loop:
    * 1. Loads per-user conversation history from PrivateTempStore.
@@ -314,7 +314,7 @@ class CopilotChatController extends ControllerBase {
       ], 500);
     }
     catch (\Throwable $e) {
-      \Drupal::logger('ai_copilot')->error('Chat agent loop exception: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->error('Chat agent loop exception: @msg', ['@msg' => $e->getMessage()]);
       return new JsonResponse([
         'error' => TRUE,
         'message' => 'Server error: ' . $e->getMessage(),
@@ -323,11 +323,11 @@ class CopilotChatController extends ControllerBase {
   }
 
   /**
-   * Handles POST /admin/api/ai-copilot/apply human-approved mutations.
+   * Handles POST /admin/api/contribot/apply human-approved mutations.
    */
   public function handleApply(Request $request): JsonResponse {
     try {
-      $config = $this->config('ai_copilot.settings');
+      $config = $this->config('contribot.settings');
       $allowProd = (bool) $config->get('allow_production_mutation');
 
       // 1. Environment & Read-Only Check.
@@ -355,7 +355,7 @@ class CopilotChatController extends ControllerBase {
       // Pre-determine affected file paths so the snapshot captures them before mutation.
       if ($path === 'custom_code') {
         $appRoot = \Drupal::hasService('kernel') ? \Drupal::root() : DRUPAL_ROOT;
-        $targetCustomFile = $appRoot . '/modules/custom/ai_copilot_generated/ai_copilot_generated.module';
+        $targetCustomFile = $appRoot . '/modules/custom/contribot_generated/contribot_generated.module';
         if (file_exists($targetCustomFile)) {
           $affectedFiles[] = $targetCustomFile;
         }
@@ -369,7 +369,7 @@ class CopilotChatController extends ControllerBase {
       if ($path === 'contrib_patch') {
         $module = $content['module'] ?? 'focal_point';
         $patch = $content['patch_content'] ?? '';
-        $patchResult = $this->composerPatchManager->applyPatchViaComposer($module, 'AI Copilot patch', $patch);
+        $patchResult = $this->composerPatchManager->applyPatchViaComposer($module, 'Contribot patch', $patch);
 
         $affected = ['installed_module' => $module, 'patch_file' => $patchResult['patch_path']];
         $diffContent = $patch;
@@ -476,7 +476,7 @@ class CopilotChatController extends ControllerBase {
         }
 
         $appRoot = \Drupal::hasService('kernel') ? \Drupal::root() : DRUPAL_ROOT;
-        $targetCustomFile = $appRoot . '/modules/custom/ai_copilot_generated/ai_copilot_generated.module';
+        $targetCustomFile = $appRoot . '/modules/custom/contribot_generated/contribot_generated.module';
         @mkdir(dirname($targetCustomFile), 0755, TRUE);
 
         $body = preg_replace('/^<\?php\s*/', '', $code);
@@ -497,7 +497,7 @@ class CopilotChatController extends ControllerBase {
     }
     catch (\Throwable $e) {
       $this->mutationLockManager->releaseLock();
-      \Drupal::logger('ai_copilot')->error('Apply API exception: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->error('Apply API exception: @msg', ['@msg' => $e->getMessage()]);
       return new JsonResponse([
         'success' => FALSE,
         'error' => 'Mutation execution failed: ' . $e->getMessage(),
@@ -537,7 +537,7 @@ class CopilotChatController extends ControllerBase {
   }
 
   /**
-   * Handles POST /admin/api/ai-copilot/revert action.
+   * Handles POST /admin/api/contribot/revert action.
    */
   public function handleRevert(Request $request): JsonResponse {
     $lockAcquired = FALSE;
@@ -578,7 +578,7 @@ class CopilotChatController extends ControllerBase {
       if ($lockAcquired) {
         $this->mutationLockManager->releaseLock();
       }
-      \Drupal::logger('ai_copilot')->error('Revert API exception: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->error('Revert API exception: @msg', ['@msg' => $e->getMessage()]);
       return new JsonResponse([
         'success' => FALSE,
         'error' => 'Revert failed: ' . $e->getMessage(),
@@ -587,7 +587,7 @@ class CopilotChatController extends ControllerBase {
   }
 
   /**
-   * Handles POST /admin/api/ai-copilot/stream — SSE streaming evaluation.
+   * Handles POST /admin/api/contribot/stream — SSE streaming evaluation.
    *
    * Emits Server-Sent Events as the AI pipeline executes so the frontend can
    * show live progress. Event types: progress, question, result, error, done.
@@ -646,7 +646,7 @@ class CopilotChatController extends ControllerBase {
         }
       }
       catch (\Throwable $e) {
-        \Drupal::logger('ai_copilot')->error('Stream API exception: @msg', ['@msg' => $e->getMessage()]);
+        \Drupal::logger('contribot')->error('Stream API exception: @msg', ['@msg' => $e->getMessage()]);
         $emit('error', ['message' => $e->getMessage()]);
       }
 
@@ -662,7 +662,7 @@ class CopilotChatController extends ControllerBase {
   }
 
   /**
-   * Handles POST /admin/api/ai-copilot/clear-session — resets conversation history.
+   * Handles POST /admin/api/contribot/clear-session — resets conversation history.
    */
   public function handleClearSession(Request $request): JsonResponse {
     $body = json_decode($request->getContent(), TRUE) ?? [];

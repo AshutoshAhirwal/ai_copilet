@@ -1,18 +1,18 @@
 <?php
 
-namespace Drupal\ai_copilot\Plugin\Tool;
+namespace Drupal\contribot\Plugin\Tool;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\tool\Plugin\ToolBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\ai_copilot\Service\ContribMatcherService;
+use Drupal\contribot\Service\ContribMatcherService;
 
 /**
  * Tool plugin for looking up candidate contrib modules.
  *
  * @Tool(
- *   id = "ai_copilot_contrib_lookup",
- *   label = @Translation("AI Copilot Contrib Lookup"),
+ *   id = "contribot_contrib_lookup",
+ *   label = @Translation("Contribot Contrib Lookup"),
  *   description = @Translation("Look up candidate drupal.org contrib modules matching a requirement prompt.")
  * )
  */
@@ -21,7 +21,7 @@ class ContribLookupTool extends ToolBase implements ContainerFactoryPluginInterf
   /**
    * Contrib matcher service.
    *
-   * @var \Drupal\ai_copilot\Service\ContribMatcherService
+   * @var \Drupal\contribot\Service\ContribMatcherService
    */
   protected $contribMatcher;
 
@@ -41,7 +41,7 @@ class ContribLookupTool extends ToolBase implements ContainerFactoryPluginInterf
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('ai_copilot.contrib_matcher')
+      $container->get('contribot.contrib_matcher')
     );
   }
 

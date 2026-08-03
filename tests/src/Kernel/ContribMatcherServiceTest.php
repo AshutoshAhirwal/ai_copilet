@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Kernel test for ContribMatcherService Semver hard filtering and scoring.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class ContribMatcherServiceTest extends KernelTestBase {
@@ -15,14 +15,14 @@ class ContribMatcherServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['system', 'user', 'ai_copilot'];
+  protected static $modules = ['system', 'user', 'contribot'];
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->installSchema('ai_copilot', ['ai_copilot_contrib_index']);
+    $this->installSchema('contribot', ['contribot_contrib_index']);
   }
 
   /**
@@ -32,7 +32,7 @@ class ContribMatcherServiceTest extends KernelTestBase {
     $db = \Drupal::database();
 
     // 1. Seed compatible candidate (Drupal 11 compatible).
-    $db->insert('ai_copilot_contrib_index')
+    $db->insert('contribot_contrib_index')
       ->fields([
         'project_name' => 'focal_point',
         'title' => 'Focal Point Crop',
@@ -48,7 +48,7 @@ class ContribMatcherServiceTest extends KernelTestBase {
       ->execute();
 
     // 2. Seed incompatible candidate (Drupal 9 only).
-    $db->insert('ai_copilot_contrib_index')
+    $db->insert('contribot_contrib_index')
       ->fields([
         'project_name' => 'old_legacy_crop',
         'title' => 'Old Legacy Crop',
@@ -63,8 +63,8 @@ class ContribMatcherServiceTest extends KernelTestBase {
       ])
       ->execute();
 
-    /** @var \Drupal\ai_copilot\Service\ContribMatcherService $matcher */
-    $matcher = \Drupal::service('ai_copilot.contrib_matcher');
+    /** @var \Drupal\contribot\Service\ContribMatcherService $matcher */
+    $matcher = \Drupal::service('contribot.contrib_matcher');
     $results = $matcher->matchCandidates('focal point crop', '11.1.2', 5);
 
     $this->assertNotEmpty($results);

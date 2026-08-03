@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Symfony\Component\Process\Process;
 

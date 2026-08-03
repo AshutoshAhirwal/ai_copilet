@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for Contribot.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_page_attachments().
+ */
+function contribot_page_attachments(array &$page) {
+  $account = \Drupal::currentUser();
+  if (!$account->hasPermission('use contribot')) {
+    return;
+  }
+
+  $config = \Drupal::config('contribot.settings');
+  $developerMode = (bool) $config->get('developer_mode');
+  if (!$developerMode) {
+    return;
+  }
+
+  /** @var \Drupal\contribot\Service\EnvironmentDetectorService $envDetector */
+  $envDetector = \Drupal::service('contribot.environment_detector');
+  $isProduction = $envDetector->isProduction();
+
+  $csrf = \Drupal::csrfToken();
+  $headerCsrfToken = $csrf->get('X-CSRF-Token request header');
+
+  $page['#attached']['library'][] = 'contribot/chat_panel';
+  $page['#attached']['drupalSettings']['contribot'] = [
+    'chatApiUrl' => '/admin/api/contribot/chat',
+    'streamApiUrl' => '/admin/api/contribot/stream',
+    'clearSessionApiUrl' => '/admin/api/contribot/clear-session',
+    'applyApiUrl' => '/admin/api/contribot/apply',
+    'revertApiUrl' => '/admin/api/contribot/revert',
+    'csrfToken' => $headerCsrfToken,
+    'securityPreset' => $config->get('security_preset') ?: 'config_only',
+    'dataPrivacyLevel' => $config->get('data_privacy_level') ?: 'structure_only',
+    'isProduction' => $isProduction,
+    'allowProductionMutation' => (bool) $config->get('allow_production_mutation'),
+  ];
+}
+
+/**
+ * Implements hook_help().
+ */
+function contribot_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.contribot':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Contribot is an in-admin developer-mode AI assistant providing contrib-first, config-first, and patch-not-rewrite architecture guidance.') . '</p>';
+      return $output;
+  }
+}

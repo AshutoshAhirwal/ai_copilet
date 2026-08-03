@@ -1,5 +1,5 @@
 /* ============================================================
-   AI Copilot — Conversational Chat Panel
+   Contribot — Conversational Chat Panel
    ============================================================ */
 
 /* --- Floating toggle button -------------------------------- */
@@ -29,7 +29,7 @@
 }
 
 /* --- Slide-over drawer ------------------------------------- */
-#ai-copilot-drawer {
+#contribot-drawer {
   position: fixed;
   top: 0;
   right: -520px;
@@ -46,7 +46,7 @@
   font-size: 0.9rem;
 }
 
-#ai-copilot-drawer.open {
+#contribot-drawer.open {
   right: 0;
 }
 

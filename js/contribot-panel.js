@@ -1,10 +1,10 @@
 (function (Drupal, drupalSettings, once) {
   'use strict';
 
-  Drupal.behaviors.aiCopilotPanel = {
+  Drupal.behaviors.contribotPanel = {
     attach: function (context) {
-      once('ai-copilot-init', 'body', context).forEach(function () {
-        var settings = drupalSettings.aiCopilot || {};
+      once('contribot-init', 'body', context).forEach(function () {
+        var settings = drupalSettings.contribot || {};
 
         // In-memory conversation ID — intentionally NOT persisted to localStorage
         // so a page reload always starts a fresh conversation.
@@ -16,14 +16,14 @@
 
         var toggleBtn = document.createElement('button');
         toggleBtn.className = 'copilot-toggle-btn';
-        toggleBtn.setAttribute('aria-label', 'Open AI Copilot');
-        toggleBtn.innerHTML = '&#9889; AI Copilot';
+        toggleBtn.setAttribute('aria-label', 'Open Contribot');
+        toggleBtn.innerHTML = '&#9889; Contribot';
         document.body.appendChild(toggleBtn);
 
         var drawer = document.createElement('div');
-        drawer.id = 'ai-copilot-drawer';
+        drawer.id = 'contribot-drawer';
         drawer.setAttribute('role', 'dialog');
-        drawer.setAttribute('aria-label', 'AI Copilot chat');
+        drawer.setAttribute('aria-label', 'Contribot chat');
         drawer.innerHTML = buildDrawerHTML(settings);
         document.body.appendChild(drawer);
 
@@ -34,7 +34,7 @@
         // ----------------------------------------------------------------
         // Welcome message
         // ----------------------------------------------------------------
-        appendMessage('ai', 'Hello! I\'m Drupal AI Copilot. Describe a site requirement and I\'ll research the best architectural approach using your live site configuration and the contrib module database.');
+        appendMessage('ai', 'Hello! I\'m Contribot. Describe a site requirement and I\'ll research the best architectural approach using your live site configuration and the contrib module database.');
 
         // ----------------------------------------------------------------
         // Toggle open / close
@@ -128,7 +128,7 @@
             : '';
           return ''
             + '<div class="copilot-header">'
-            +   '<h3 class="copilot-header-title">&#9889; Drupal AI Copilot</h3>'
+            +   '<h3 class="copilot-header-title">&#9889; Contribot</h3>'
             +   '<div class="copilot-header-actions">'
             +     '<button id="copilot-new-chat-btn" class="copilot-btn-icon" title="New conversation">New Chat</button>'
             +     '<button id="copilot-close-btn" class="copilot-close-btn" title="Close">&times;</button>'
@@ -151,7 +151,7 @@
 
           var label = document.createElement('div');
           label.className = 'chat-msg__label';
-          label.textContent = type === 'user' ? 'You' : (type === 'error' ? 'Error' : 'AI Copilot');
+          label.textContent = type === 'user' ? 'You' : (type === 'error' ? 'Error' : 'Contribot');
 
           var bubble = document.createElement('div');
           bubble.className = 'chat-msg__bubble';
@@ -170,7 +170,7 @@
 
           var label = document.createElement('div');
           label.className = 'chat-msg__label';
-          label.textContent = 'AI Copilot';
+          label.textContent = 'Contribot';
 
           var bubble = document.createElement('div');
           bubble.className = 'chat-msg__bubble';
@@ -189,7 +189,7 @@
 
           var label = document.createElement('div');
           label.className = 'chat-msg__label';
-          label.textContent = 'AI Copilot';
+          label.textContent = 'Contribot';
 
           var bubble = document.createElement('div');
           bubble.className = 'chat-msg__bubble';
@@ -200,7 +200,7 @@
           if (demoMode) {
             var demoBadge = document.createElement('div');
             demoBadge.className = 'copilot-demo-badge';
-            demoBadge.textContent = '⚠ Demo Mode — no LLM provider configured. This is a template response, not real AI output. Configure a provider in AI Copilot Settings.';
+            demoBadge.textContent = '⚠ Demo Mode — no LLM provider configured. This is a template response, not real AI output. Configure a provider in Contribot Settings.';
             bubble.appendChild(demoBadge);
           }
 
@@ -320,7 +320,7 @@
               var auditId = data.audit_id;
               var successHtml = '<div class="applied-card">'
                 + '<span class="applied-card__text">&#10003; Applied — Audit #' + auditId + '</span>'
-                + '<button class="btn-revert" onclick="Drupal.aiCopilotRevert(' + auditId + ')">Revert</button>'
+                + '<button class="btn-revert" onclick="Drupal.contribotRevert(' + auditId + ')">Revert</button>'
                 + '</div>';
               appendMessage('ai', successHtml);
               bar.remove();
@@ -334,7 +334,7 @@
         // ================================================================
         // Global revert helper (called from inline onclick above)
         // ================================================================
-        Drupal.aiCopilotRevert = function (auditId) {
+        Drupal.contribotRevert = function (auditId) {
           if (!confirm('Revert mutation #' + auditId + '? Config and module state will be restored.')) return;
 
           fetch(settings.revertApiUrl, {

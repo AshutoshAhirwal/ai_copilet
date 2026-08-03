@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\Core\StreamWrapper\PrivateStream;
 use Drupal\Core\Site\Settings;
@@ -9,7 +9,7 @@ use Drupal\KernelTests\KernelTestBase;
 /**
  * Kernel test for ComposerPatchManagerService.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class ComposerPatchManagerServiceTest extends KernelTestBase {
@@ -17,7 +17,7 @@ class ComposerPatchManagerServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['ai_copilot', 'system', 'file'];
+  protected static $modules = ['contribot', 'system', 'file'];
 
   /**
    * {@inheritdoc}
@@ -38,8 +38,8 @@ class ComposerPatchManagerServiceTest extends KernelTestBase {
    * Tests patch queuing and registration.
    */
   public function testApplyPatchViaComposer(): void {
-    /** @var \Drupal\ai_copilot\Service\ComposerPatchManagerService $manager */
-    $manager = \Drupal::service('ai_copilot.composer_patch_manager');
+    /** @var \Drupal\contribot\Service\ComposerPatchManagerService $manager */
+    $manager = \Drupal::service('contribot.composer_patch_manager');
 
     $patchContent = "diff --git a/test.module b/test.module\n--- a/test.module\n+++ b/test.module\n@@ -1,2 +1,3 @@\n+// Test patch\n";
 

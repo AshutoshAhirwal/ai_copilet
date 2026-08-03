@@ -1,0 +1,69 @@
+services:
+  contribot.environment_detector:
+    class: Drupal\contribot\Service\EnvironmentDetectorService
+
+  contribot.data_privacy_manager:
+    class: Drupal\contribot\Service\DataPrivacyManagerService
+
+  contribot.site_context_assembler:
+    class: Drupal\contribot\Service\SiteContextAssembler
+    arguments: ['@module_handler', '@config.factory', '@contribot.data_privacy_manager']
+
+  contribot.contrib_indexer:
+    class: Drupal\contribot\Service\ContribIndexerService
+    arguments: ['@database', '@http_client']
+
+  contribot.contrib_matcher:
+    class: Drupal\contribot\Service\ContribMatcherService
+    arguments: ['@database', '@contribot.llm_provider']
+
+  contribot.source_fetcher:
+    class: Drupal\contribot\Service\ContribSourceFetcherService
+    arguments: ['@http_client']
+
+  contribot.patch_validator:
+    class: Drupal\contribot\Service\PatchValidatorService
+
+  contribot.php_code_validator:
+    class: Drupal\contribot\Service\PhpCodeValidatorService
+
+  contribot.composer_patch_manager:
+    class: Drupal\contribot\Service\ComposerPatchManagerService
+    arguments: ['@queue']
+
+  contribot.llm_provider:
+    class: Drupal\contribot\Service\CopilotLlmProvider
+    arguments: ['@http_client']
+
+  contribot.config_decision_engine:
+    class: Drupal\contribot\Service\ConfigDecisionEngine
+    arguments:
+      - '@contribot.site_context_assembler'
+      - '@contribot.contrib_matcher'
+      - '@contribot.source_fetcher'
+      - '@contribot.patch_validator'
+      - '@contribot.php_code_validator'
+      - '@contribot.llm_provider'
+
+  contribot.snapshot_manager:
+    class: Drupal\contribot\Service\SnapshotManagerService
+    arguments: ['@database', '@config.factory', '@module_installer']
+
+  contribot.mutation_lock_manager:
+    class: Drupal\contribot\Service\MutationLockManagerService
+    arguments: ['@lock']
+
+  contribot.audit_logger:
+    class: Drupal\contribot\Service\AuditLoggerService
+    arguments: ['@database', '@current_user']
+
+  contribot.conversation_session:
+    class: Drupal\contribot\Service\ConversationSessionService
+    arguments: ['@tempstore.private']
+
+  contribot.agent_tool_registry:
+    class: Drupal\contribot\Service\AgentToolRegistry
+    arguments:
+      - '@contribot.site_context_assembler'
+      - '@contribot.contrib_matcher'
+      - '@config.factory'

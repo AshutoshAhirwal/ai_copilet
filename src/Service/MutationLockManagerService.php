@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Lock\LockBackendInterface;
 
@@ -9,7 +9,7 @@ use Drupal\Core\Lock\LockBackendInterface;
  */
 class MutationLockManagerService {
 
-  const LOCK_KEY = 'ai_copilot_mutation_lock';
+  const LOCK_KEY = 'contribot_mutation_lock';
 
   /**
    * Lock backend service.

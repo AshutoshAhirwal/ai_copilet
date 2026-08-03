@@ -1,10 +1,10 @@
 {
-    "name": "drupal/ai_copilot",
+    "name": "drupal/contribot",
     "type": "drupal-module",
     "description": "Developer-mode AI assistant providing contrib-first, config-first, and patch-not-rewrite architecture guidance and safe human-in-the-loop site mutations.",
-    "keywords": ["Drupal", "AI", "Copilot", "MCP", "Architecture", "Contrib-First"],
+    "keywords": ["Drupal", "AI", "Contribot", "Architecture", "Contrib-First"],
     "license": "GPL-2.0-or-later",
-    "homepage": "https://www.drupal.org/project/ai_copilot",
+    "homepage": "https://www.drupal.org/project/contribot",
     "minimum-stability": "alpha",
     "prefer-stable": true,
     "require": {
@@ -17,7 +17,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Drupal\\ai_copilot\\": "src/"
+            "Drupal\\contribot\\": "src/"
         }
     },
     "extra": {

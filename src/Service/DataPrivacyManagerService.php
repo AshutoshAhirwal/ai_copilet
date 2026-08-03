@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 /**
  * Service for data privacy filtering and outbound LLM payload inspection.

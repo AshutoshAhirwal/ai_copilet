@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Entity;
+namespace Drupal\contribot\Entity;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 
@@ -39,7 +39,7 @@ interface CopilotAuditLogInterface extends ContentEntityInterface {
    * @param string $status
    *   One of: applied, rejected, edited, reverted.
    *
-   * @return \Drupal\ai_copilot\Entity\CopilotAuditLogInterface
+   * @return \Drupal\contribot\Entity\CopilotAuditLogInterface
    *   The current entity.
    */
   public function setStatus(string $status): CopilotAuditLogInterface;

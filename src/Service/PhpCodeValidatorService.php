@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Symfony\Component\Process\Process;
 
@@ -20,7 +20,7 @@ class PhpCodeValidatorService {
    */
   public function validateCustomCode(string $phpCode): array {
     $tempFile = tempnam(sys_get_temp_dir(), 'copilot_custom_') . '.php';
-    $fileHeader = "<?php\n\n/**\n * @file\n * AI Copilot generated code snippet.\n */\n\n";
+    $fileHeader = "<?php\n\n/**\n * @file\n * Contribot generated code snippet.\n */\n\n";
     $body = rtrim(ltrim(ltrim($phpCode, "<?php"), "\n")) . "\n";
     file_put_contents($tempFile, $fileHeader . $body);
 

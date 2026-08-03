@@ -1,11 +1,11 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\ai_copilot\Service\ContribSourceFetcherService;
-use Drupal\ai_copilot\Service\CopilotLlmProvider;
-use Drupal\ai_copilot\Service\PatchValidatorService;
+use Drupal\contribot\Service\ContribSourceFetcherService;
+use Drupal\contribot\Service\CopilotLlmProvider;
+use Drupal\contribot\Service\PatchValidatorService;
 
 /**
  * Kernel test for ConfigDecisionEngine 3-path classification.
@@ -14,7 +14,7 @@ use Drupal\ai_copilot\Service\PatchValidatorService;
  * validator) are replaced with deterministic stubs so the test is
  * hermetic, fast, and makes zero live API calls.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class ConfigDecisionEngineTest extends KernelTestBase {
@@ -22,17 +22,17 @@ class ConfigDecisionEngineTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['system', 'user', 'field', 'node', 'ai_copilot'];
+  protected static $modules = ['system', 'user', 'field', 'node', 'contribot'];
 
   /**
    * {@inheritdoc}
    */
   protected function setUp(): void {
     parent::setUp();
-    $this->installSchema('ai_copilot', ['ai_copilot_contrib_index']);
+    $this->installSchema('contribot', ['contribot_contrib_index']);
 
     // Seed a focal_point candidate so ContribMatcherService has data to rank.
-    \Drupal::database()->insert('ai_copilot_contrib_index')
+    \Drupal::database()->insert('contribot_contrib_index')
       ->fields([
         'project_name' => 'focal_point',
         'title' => 'Focal Point Crop',
@@ -66,7 +66,7 @@ class ConfigDecisionEngineTest extends KernelTestBase {
               'path' => 'contrib_patch',
               'reasoning' => 'Focal Point module satisfies this requirement (stub).',
               'module' => 'focal_point',
-              'patch_content' => "--- a/focal_point.module\n+++ b/focal_point.module\n@@ -1 +1,2 @@\n+// AI Copilot patch\n",
+              'patch_content' => "--- a/focal_point.module\n+++ b/focal_point.module\n@@ -1 +1,2 @@\n+// Contribot patch\n",
             ]);
           }
           // Content type query → config_only.
@@ -77,7 +77,7 @@ class ConfigDecisionEngineTest extends KernelTestBase {
           ]);
         }
       );
-    $this->container->set('ai_copilot.llm_provider', $llmStub);
+    $this->container->set('contribot.llm_provider', $llmStub);
 
     // Stub 2: Source fetcher — no HTTP calls to drupal.org or Packagist.
     $fetcherStub = $this->createMock(ContribSourceFetcherService::class);
@@ -85,7 +85,7 @@ class ConfigDecisionEngineTest extends KernelTestBase {
       'staging_dir' => sys_get_temp_dir(),
       'version' => '1.0.0',
     ]);
-    $this->container->set('ai_copilot.source_fetcher', $fetcherStub);
+    $this->container->set('contribot.source_fetcher', $fetcherStub);
 
     // Stub 3: Patch validator — no git dependency in the test environment.
     $patchValidatorStub = $this->createMock(PatchValidatorService::class);
@@ -94,7 +94,7 @@ class ConfigDecisionEngineTest extends KernelTestBase {
       'status_label' => 'Ready to Apply',
       'output' => '',
     ]);
-    $this->container->set('ai_copilot.patch_validator', $patchValidatorStub);
+    $this->container->set('contribot.patch_validator', $patchValidatorStub);
   }
 
   /**
@@ -103,8 +103,8 @@ class ConfigDecisionEngineTest extends KernelTestBase {
    * Stubs guarantee deterministic outcomes; real paths asserted exactly.
    */
   public function testEvaluateRequirementPathClassification(): void {
-    /** @var \Drupal\ai_copilot\Service\ConfigDecisionEngine $engine */
-    $engine = \Drupal::service('ai_copilot.config_decision_engine');
+    /** @var \Drupal\contribot\Service\ConfigDecisionEngine $engine */
+    $engine = \Drupal::service('contribot.config_decision_engine');
 
     // 1. Focal point → contrib_patch (strict assertion).
     $evalContrib = $engine->evaluateRequirement('Add a focal point crop to image fields');

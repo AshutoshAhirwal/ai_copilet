@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -27,7 +27,7 @@ class SiteContextAssembler {
   /**
    * The data privacy manager service.
    *
-   * @var \Drupal\ai_copilot\Service\DataPrivacyManagerService
+   * @var \Drupal\contribot\Service\DataPrivacyManagerService
    */
   protected $dataPrivacyManager;
 

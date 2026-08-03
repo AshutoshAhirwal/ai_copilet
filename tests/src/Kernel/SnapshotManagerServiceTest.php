@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -8,7 +8,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 /**
  * Kernel test for SnapshotManagerService.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class SnapshotManagerServiceTest extends KernelTestBase {
@@ -16,7 +16,7 @@ class SnapshotManagerServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['system', 'user', 'file', 'ai_copilot'];
+  protected static $modules = ['system', 'user', 'file', 'contribot'];
 
   /**
    * Registers the 'private' stream wrapper at container-build time.
@@ -42,15 +42,15 @@ class SnapshotManagerServiceTest extends KernelTestBase {
     $privateDir = $this->siteDirectory . '/private';
     @mkdir($privateDir, 0775, TRUE);
     $this->setSetting('file_private_path', $privateDir);
-    $this->installSchema('ai_copilot', ['ai_copilot_audit_log']);
+    $this->installSchema('contribot', ['contribot_audit_log']);
   }
 
   /**
    * Tests snapshot creation and revert functionality.
    */
   public function testCreateSnapshotAndRevert(): void {
-    /** @var \Drupal\ai_copilot\Service\SnapshotManagerService $snapshotManager */
-    $snapshotManager = \Drupal::service('ai_copilot.snapshot_manager');
+    /** @var \Drupal\contribot\Service\SnapshotManagerService $snapshotManager */
+    $snapshotManager = \Drupal::service('contribot.snapshot_manager');
 
     $auditId = 999;
     $snapshotPath = $snapshotManager->createSnapshot($auditId, []);
@@ -58,7 +58,7 @@ class SnapshotManagerServiceTest extends KernelTestBase {
 
     // Record audit log entry.
     $db = \Drupal::database();
-    $db->insert('ai_copilot_audit_log')
+    $db->insert('contribot_audit_log')
       ->fields([
         'id' => $auditId,
         'uid' => 1,
@@ -106,15 +106,15 @@ class SnapshotManagerServiceTest extends KernelTestBase {
     $namesBefore = $configFactory->listAll('user.role.dummy_');
     $this->assertCount($total, $namesBefore, 'All dummy role config objects exist before snapshot.');
 
-    /** @var \Drupal\ai_copilot\Service\SnapshotManagerService $snapshotManager */
-    $snapshotManager = \Drupal::service('ai_copilot.snapshot_manager');
+    /** @var \Drupal\contribot\Service\SnapshotManagerService $snapshotManager */
+    $snapshotManager = \Drupal::service('contribot.snapshot_manager');
 
     $auditId = 998;
     $snapshotPath = $snapshotManager->createSnapshot($auditId, []);
     $this->assertNotEmpty($snapshotPath);
 
     $db = \Drupal::database();
-    $db->insert('ai_copilot_audit_log')
+    $db->insert('contribot_audit_log')
       ->fields([
         'id' => $auditId,
         'uid' => 1,

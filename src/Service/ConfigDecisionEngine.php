@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 /**
  * Service for analyzing requirements against site config and recommending the minimal path.
@@ -10,42 +10,42 @@ class ConfigDecisionEngine {
   /**
    * Site context assembler.
    *
-   * @var \Drupal\ai_copilot\Service\SiteContextAssembler
+   * @var \Drupal\contribot\Service\SiteContextAssembler
    */
   protected $siteContextAssembler;
 
   /**
    * Contrib matcher service.
    *
-   * @var \Drupal\ai_copilot\Service\ContribMatcherService
+   * @var \Drupal\contribot\Service\ContribMatcherService
    */
   protected $contribMatcher;
 
   /**
    * Source fetcher service.
    *
-   * @var \Drupal\ai_copilot\Service\ContribSourceFetcherService
+   * @var \Drupal\contribot\Service\ContribSourceFetcherService
    */
   protected $sourceFetcher;
 
   /**
    * Patch validator service.
    *
-   * @var \Drupal\ai_copilot\Service\PatchValidatorService
+   * @var \Drupal\contribot\Service\PatchValidatorService
    */
   protected $patchValidator;
 
   /**
    * PHP code validator service.
    *
-   * @var \Drupal\ai_copilot\Service\PhpCodeValidatorService
+   * @var \Drupal\contribot\Service\PhpCodeValidatorService
    */
   protected $phpCodeValidator;
 
   /**
    * LLM provider service.
    *
-   * @var \Drupal\ai_copilot\Service\CopilotLlmProvider
+   * @var \Drupal\contribot\Service\CopilotLlmProvider
    */
   protected $llmProvider;
 
@@ -118,7 +118,7 @@ class ConfigDecisionEngine {
    *   full evaluation structure (path, reasoning, candidates, validation_status, …).
    */
   public function evaluateWithHistory(string $requirement, array $history = []): array {
-    $config = \Drupal::config('ai_copilot.settings');
+    $config = \Drupal::config('contribot.settings');
     $privacyLevel = $config->get('data_privacy_level') ?: 'structure_only';
 
     $this->siteContextAssembler->assembleContext($privacyLevel);
@@ -132,7 +132,7 @@ class ConfigDecisionEngine {
     $userTurns = count(array_filter($history, fn($m) => ($m['role'] ?? '') === 'user'));
     $hasClarifications = $userTurns > 1;
 
-    $systemPrompt = "You are Drupal AI Copilot. Evaluate requirements and determine the minimal architectural path.\n";
+    $systemPrompt = "You are Contribot. Evaluate requirements and determine the minimal architectural path.\n";
 
     if (!$hasClarifications) {
       $systemPrompt .= "CLARIFICATION: If the requirement lacks critical specifics needed to generate correct "
@@ -211,7 +211,7 @@ class ConfigDecisionEngine {
    *   Decision structure with path, reasoning, diff/YAML/patch, and validation status.
    */
   public function evaluateRequirement(string $requirement): array {
-    $config = \Drupal::config('ai_copilot.settings');
+    $config = \Drupal::config('contribot.settings');
     $privacyLevel = $config->get('data_privacy_level') ?: 'structure_only';
 
     // 1. Assemble site context.
@@ -221,7 +221,7 @@ class ConfigDecisionEngine {
     $candidates = $this->contribMatcher->matchCandidates($requirement, \Drupal::VERSION, 5);
 
     // 3. System Prompt enforcing Contrib-First & Config-First decision matrix.
-    $systemPrompt = "You are Drupal AI Copilot. Evaluate the user requirement against site context and candidate modules.\n" .
+    $systemPrompt = "You are Contribot. Evaluate the user requirement against site context and candidate modules.\n" .
       "Enforce this strict decision hierarchy:\n" .
       "1. Path 'config_only': If requirement can be solved by Drupal configuration alone (fields, content types, views, view modes, permissions), recommend config_only + exportable YAML.\n" .
       "2. Path 'contrib_patch': If a maintained contrib module covers >=80% of requirement, recommend contrib_patch + composer require command + scoped .patch file.\n" .

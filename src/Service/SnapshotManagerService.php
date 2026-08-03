@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Database\Connection;
@@ -58,7 +58,7 @@ class SnapshotManagerService {
    *   Path to the snapshot directory.
    */
   public function createSnapshot(int $auditId, array $affectedFiles = []): string {
-    $snapshotDir = 'private://ai_copilot/snapshots/' . $auditId;
+    $snapshotDir = 'private://contribot/snapshots/' . $auditId;
     $fileSystem = \Drupal::service('file_system');
     $fileSystem->prepareDirectory($snapshotDir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
 
@@ -105,7 +105,7 @@ class SnapshotManagerService {
    *   Array with 'success' (bool) and 'message' (string).
    */
   public function revertMutation(int $auditId): array {
-    $record = $this->database->select('ai_copilot_audit_log', 'a')
+    $record = $this->database->select('contribot_audit_log', 'a')
       ->fields('a')
       ->condition('id', $auditId)
       ->execute()
@@ -133,7 +133,7 @@ class SnapshotManagerService {
           $this->moduleInstaller->uninstall([$moduleToUninstall]);
         }
         catch (\Exception $e) {
-          \Drupal::logger('ai_copilot')->warning('Revert module uninstall failed: @msg', ['@msg' => $e->getMessage()]);
+          \Drupal::logger('contribot')->warning('Revert module uninstall failed: @msg', ['@msg' => $e->getMessage()]);
         }
       }
     }
@@ -149,7 +149,7 @@ class SnapshotManagerService {
         }
       }
       catch (\Exception $e) {
-        \Drupal::logger('ai_copilot')->warning('Revert content type deletion failed: @msg', ['@msg' => $e->getMessage()]);
+        \Drupal::logger('contribot')->warning('Revert content type deletion failed: @msg', ['@msg' => $e->getMessage()]);
       }
     }
 
@@ -176,7 +176,7 @@ class SnapshotManagerService {
     }
 
     // 4. Update Audit Record Status to 'reverted'.
-    $this->database->update('ai_copilot_audit_log')
+    $this->database->update('contribot_audit_log')
       ->fields(['status' => 'reverted'])
       ->condition('id', $auditId)
       ->execute();

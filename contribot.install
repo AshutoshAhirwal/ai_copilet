@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Install, update, and uninstall functions for the AI Copilot module.
+ * Install, update, and uninstall functions for the Contribot module.
  */
 
 /**
@@ -11,26 +11,22 @@
  * Adds FULLTEXT indexes on MySQL/MariaDB to enable MATCH...AGAINST Stage 1
  * full-text search in ContribMatcherService. Silently skipped on other DB drivers.
  */
-function ai_copilot_install() {
+function contribot_install() {
   $db = \Drupal::database();
   if ($db->driver() !== 'mysql') {
     return;
   }
 
-  // Resolve the actual table name (Drupal prefixing is handled by the DB layer).
-  $tablePrefix = $db->tablePrefix();
-  $tableName = $tablePrefix . 'ai_copilot_contrib_index';
-
   try {
     $db->query(
-      'ALTER TABLE {ai_copilot_contrib_index} ADD FULLTEXT INDEX ft_contrib_search (title, description, readme_summary)'
+      'ALTER TABLE {contribot_contrib_index} ADD FULLTEXT INDEX ft_contrib_search (title, description, readme_summary)'
     );
   }
   catch (\Exception $e) {
     // Index may already exist or storage engine may not support FULLTEXT.
     // Log a notice but do not prevent module installation.
-    \Drupal::logger('ai_copilot')->notice(
-      'Could not add FULLTEXT index on ai_copilot_contrib_index (@msg). PHP term-frequency fallback will be used.',
+    \Drupal::logger('contribot')->notice(
+      'Could not add FULLTEXT index on contribot_contrib_index (@msg). PHP term-frequency fallback will be used.',
       ['@msg' => $e->getMessage()]
     );
   }
@@ -39,10 +35,10 @@ function ai_copilot_install() {
 /**
  * Implements hook_schema().
  */
-function ai_copilot_schema() {
+function contribot_schema() {
   $schema = [];
 
-  $schema['ai_copilot_contrib_index'] = [
+  $schema['contribot_contrib_index'] = [
     'description' => 'Local index of drupal.org contrib module metadata for matching.',
     'fields' => [
       'project_name' => [
@@ -129,8 +125,8 @@ function ai_copilot_schema() {
     ],
   ];
 
-  $schema['ai_copilot_audit_log'] = [
-    'description' => 'Audit log of AI Copilot prompts, decisions, applied changes, and reverts.',
+  $schema['contribot_audit_log'] = [
+    'description' => 'Audit log of Contribot prompts, decisions, applied changes, and reverts.',
     'fields' => [
       'id' => [
         'description' => 'Primary Key: Unique audit log entry ID.',

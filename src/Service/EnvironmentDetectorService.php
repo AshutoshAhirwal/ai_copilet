@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Site\Settings;
 
@@ -17,7 +17,7 @@ class EnvironmentDetectorService {
    */
   public function isProduction(): bool {
     // Explicit setting override takes precedence.
-    if (Settings::get('ai_copilot_production_mode') === TRUE) {
+    if (Settings::get('contribot_production_mode') === TRUE) {
       return TRUE;
     }
 

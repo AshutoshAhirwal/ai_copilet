@@ -1,4 +1,4 @@
-name: 'Drupal AI Copilot'
+name: 'Contribot'
 type: module
 description: 'Developer-mode AI assistant providing contrib-first, config-first, and patch-not-rewrite architecture guidance and safe human-in-the-loop site mutations.'
 package: Development

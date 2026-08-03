@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Composer\Semver\Semver;
 use Drupal\Core\File\FileSystemInterface;
@@ -61,7 +61,7 @@ class ContribSourceFetcherService {
       $exactVersion = $this->resolveVersionFromPackagist($projectName, $siteCoreVersion) ?? '1.0.0';
     }
 
-    $stagingDir = 'private://ai_copilot/staging/' . $projectName;
+    $stagingDir = 'private://contribot/staging/' . $projectName;
     $realStagingDir = \Drupal::service('file_system')->realpath($stagingDir);
 
     if (!$realStagingDir) {
@@ -97,7 +97,7 @@ class ContribSourceFetcherService {
     try {
       $url = sprintf('https://repo.packagist.org/p2/drupal/%s.json', rawurlencode($projectName));
       $response = $this->httpClient->request('GET', $url, [
-        'headers' => ['User-Agent' => 'Drupal-AI-Copilot/1.0'],
+        'headers' => ['User-Agent' => 'Drupal-Contribot/1.0'],
         'timeout' => 10,
       ]);
 
@@ -149,7 +149,7 @@ class ContribSourceFetcherService {
       return $candidates[0];
     }
     catch (\Exception $e) {
-      \Drupal::logger('ai_copilot')->warning('Packagist version resolution failed for @module: @msg', [
+      \Drupal::logger('contribot')->warning('Packagist version resolution failed for @module: @msg', [
         '@module' => $projectName,
         '@msg' => $e->getMessage(),
       ]);

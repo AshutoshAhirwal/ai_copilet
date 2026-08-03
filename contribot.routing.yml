@@ -1,0 +1,52 @@
+contribot.settings:
+  path: '/admin/config/development/contribot'
+  defaults:
+    _form: '\Drupal\contribot\Form\CopilotSettingsForm'
+    _title: 'Contribot Settings'
+  requirements:
+    _permission: 'administer contribot'
+
+contribot.chat_api:
+  path: '/admin/api/contribot/chat'
+  defaults:
+    _controller: '\Drupal\contribot\Controller\CopilotChatController::handleChat'
+  requirements:
+    _permission: 'use contribot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'
+
+contribot.apply_api:
+  path: '/admin/api/contribot/apply'
+  defaults:
+    _controller: '\Drupal\contribot\Controller\CopilotChatController::handleApply'
+  requirements:
+    _permission: 'use contribot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'
+
+contribot.revert_api:
+  path: '/admin/api/contribot/revert'
+  defaults:
+    _controller: '\Drupal\contribot\Controller\CopilotChatController::handleRevert'
+  requirements:
+    _permission: 'use contribot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'
+
+contribot.stream_api:
+  path: '/admin/api/contribot/stream'
+  defaults:
+    _controller: '\Drupal\contribot\Controller\CopilotChatController::handleStream'
+  requirements:
+    _permission: 'use contribot'
+    _csrf_request_header_token: 'TRUE'
+  methods: [POST]
+
+contribot.clear_session_api:
+  path: '/admin/api/contribot/clear-session'
+  defaults:
+    _controller: '\Drupal\contribot\Controller\CopilotChatController::handleClearSession'
+  requirements:
+    _permission: 'use contribot'
+    _csrf_request_header_token: 'TRUE'
+    _format: 'json'

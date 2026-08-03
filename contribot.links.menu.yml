@@ -1,6 +1,6 @@
-ai_copilot.settings:
-  title: 'AI Copilot'
+contribot.settings:
+  title: 'Contribot'
   description: 'Configure Developer Mode, security presets, provider settings, and data privacy options.'
   parent: system.admin_config_development
-  route_name: ai_copilot.settings
+  route_name: contribot.settings
   weight: 50

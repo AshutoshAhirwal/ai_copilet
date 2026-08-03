@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+- **Renamed project from `ai_copilot` to Contribot (machine name: `contribot`).**
+  Every module-prefixed file, the PHP namespace, config object name, service
+  IDs, route names/paths, permission machine names, database table names,
+  and CSS/JS identifiers were renamed to match. See past entries below for
+  history recorded under the old name — they are left as originally written.
+
+  **Upgrade note:** this is not a drop-in update for anyone who had
+  `ai_copilot` installed — Drupal sees `contribot` as a completely different
+  module. Uninstall `ai_copilot` (or manually migrate its config and the
+  `ai_copilot_contrib_index` / `ai_copilot_audit_log` database tables),
+  install `contribot` fresh, then reconfigure Settings and permissions as
+  described in the README.
+
 ## 1.0.0-alpha1 — first public release
 
 First release prepared for public, self-hosted BYOK distribution.

@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Unit;
+namespace Drupal\Tests\contribot\Unit;
 
 use Drupal\Tests\UnitTestCase;
 
 /**
  * Unit test for contrib module scoring formula calculations.
  *
- * @group ai_copilot
+ * @group contribot
  */
 class ContribScorerTest extends UnitTestCase {
 

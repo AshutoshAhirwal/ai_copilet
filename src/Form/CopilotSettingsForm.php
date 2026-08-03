@@ -1,12 +1,12 @@
 <?php
 
-namespace Drupal\ai_copilot\Form;
+namespace Drupal\contribot\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Configure AI Copilot settings for this site.
+ * Configure Contribot settings for this site.
  */
 class CopilotSettingsForm extends ConfigFormBase {
 
@@ -14,24 +14,24 @@ class CopilotSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'ai_copilot_settings_form';
+    return 'contribot_settings_form';
   }
 
   /**
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
-    return ['ai_copilot.settings'];
+    return ['contribot.settings'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->config('ai_copilot.settings');
+    $config = $this->config('contribot.settings');
 
-    /** @var \Drupal\ai_copilot\Service\EnvironmentDetectorService $envDetector */
-    $envDetector = \Drupal::service('ai_copilot.environment_detector');
+    /** @var \Drupal\contribot\Service\EnvironmentDetectorService $envDetector */
+    $envDetector = \Drupal::service('contribot.environment_detector');
     $isProduction = $envDetector->isProduction();
 
     if ($isProduction) {
@@ -41,14 +41,14 @@ class CopilotSettingsForm extends ConfigFormBase {
     $form['developer_mode'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable Developer Mode'),
-      '#description' => $this->t('When enabled, the AI Copilot chat drawer will appear in the admin UI for users with the "Use AI Copilot" permission.'),
+      '#description' => $this->t('When enabled, the Contribot chat drawer will appear in the admin UI for users with the "Use Contribot" permission.'),
       '#default_value' => $config->get('developer_mode') ?? FALSE,
     ];
 
     $form['security_preset'] = [
       '#type' => 'select',
       '#title' => $this->t('Security Preset'),
-      '#description' => $this->t('Controls what actions AI Copilot can perform.'),
+      '#description' => $this->t('Controls what actions Contribot can perform.'),
       '#options' => [
         'read_only' => $this->t('Read-Only (Site introspection & advice only)'),
         'config_only' => $this->t('Config-Only (Allow applying configuration YAML changes only)'),
@@ -60,7 +60,7 @@ class CopilotSettingsForm extends ConfigFormBase {
     $form['llm_provider'] = [
       '#type' => 'select',
       '#title' => $this->t('LLM Provider'),
-      '#description' => $this->t('Explicitly select which provider the API key below belongs to. AI Copilot never guesses this from the key format.'),
+      '#description' => $this->t('Explicitly select which provider the API key below belongs to. Contribot never guesses this from the key format.'),
       '#options' => [
         '' => $this->t('- Select a provider -'),
         'gemini' => $this->t('Google Gemini'),
@@ -119,7 +119,7 @@ class CopilotSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->config('ai_copilot.settings')
+    $this->config('contribot.settings')
       ->set('developer_mode', (bool) $form_state->getValue('developer_mode'))
       ->set('security_preset', $form_state->getValue('security_preset'))
       ->set('llm_provider', $form_state->getValue('llm_provider'))

@@ -1,12 +1,12 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Session\AccountProxyInterface;
 
 /**
- * Service for recording AI Copilot audit logs.
+ * Service for recording Contribot audit logs.
  */
 class AuditLoggerService {
 
@@ -59,7 +59,7 @@ class AuditLoggerService {
     string $snapshotPath = '',
     string $status = 'applied',
   ): int {
-    return (int) $this->database->insert('ai_copilot_audit_log')
+    return (int) $this->database->insert('contribot_audit_log')
       ->fields([
         'uid' => (int) $this->currentUser->id(),
         'timestamp' => time(),
@@ -83,7 +83,7 @@ class AuditLoggerService {
    *   List of audit log records.
    */
   public function getAuditLogs(int $limit = 20): array {
-    return $this->database->select('ai_copilot_audit_log', 'a')
+    return $this->database->select('contribot_audit_log', 'a')
       ->fields('a')
       ->orderBy('id', 'DESC')
       ->range(0, $limit)

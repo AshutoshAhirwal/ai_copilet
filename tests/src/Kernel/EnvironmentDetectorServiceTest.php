@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Kernel test for EnvironmentDetectorService.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class EnvironmentDetectorServiceTest extends KernelTestBase {
@@ -15,14 +15,14 @@ class EnvironmentDetectorServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['ai_copilot'];
+  protected static $modules = ['contribot'];
 
   /**
    * Tests production environment detection and mutation checks.
    */
   public function testEnvironmentAndMutationGuardrails(): void {
-    /** @var \Drupal\ai_copilot\Service\EnvironmentDetectorService $envDetector */
-    $envDetector = \Drupal::service('ai_copilot.environment_detector');
+    /** @var \Drupal\contribot\Service\EnvironmentDetectorService $envDetector */
+    $envDetector = \Drupal::service('contribot.environment_detector');
 
     $isProd = $envDetector->isProduction();
     $this->assertIsBool($isProd);

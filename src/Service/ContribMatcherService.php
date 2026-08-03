@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Database\Connection;
 use Composer\Semver\Semver;
@@ -27,7 +27,7 @@ class ContribMatcherService {
   /**
    * LLM provider service for Stage 2 semantic re-ranking.
    *
-   * @var \Drupal\ai_copilot\Service\CopilotLlmProvider
+   * @var \Drupal\contribot\Service\CopilotLlmProvider
    */
   protected $llmProvider;
 
@@ -172,7 +172,7 @@ class ContribMatcherService {
         // LIMIT requires a bare integer in MySQL/MariaDB.
         $records = $this->database->query(
           'SELECT *, MATCH(title, description, readme_summary) AGAINST (:q IN NATURAL LANGUAGE MODE) AS ft_score
-           FROM {ai_copilot_contrib_index}
+           FROM {contribot_contrib_index}
            ORDER BY ft_score DESC
            LIMIT ' . (int) $limit,
           [':q' => $requirement]
@@ -187,12 +187,12 @@ class ContribMatcherService {
       }
       catch (\Exception $e) {
         // FULLTEXT index may not exist yet (e.g. before hook_install runs).
-        \Drupal::logger('ai_copilot')->notice('FULLTEXT search fallback: @msg', ['@msg' => $e->getMessage()]);
+        \Drupal::logger('contribot')->notice('FULLTEXT search fallback: @msg', ['@msg' => $e->getMessage()]);
       }
     }
 
     // Fallback: full-table scan with PHP term-frequency scoring (SQLite / PostgreSQL).
-    $records = $this->database->select('ai_copilot_contrib_index', 'c')
+    $records = $this->database->select('contribot_contrib_index', 'c')
       ->fields('c')
       ->execute()
       ->fetchAll();
@@ -271,7 +271,7 @@ class ContribMatcherService {
       return $validated;
     }
     catch (\Exception $e) {
-      \Drupal::logger('ai_copilot')->notice('LLM re-ranking skipped: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->notice('LLM re-ranking skipped: @msg', ['@msg' => $e->getMessage()]);
       return [];
     }
   }

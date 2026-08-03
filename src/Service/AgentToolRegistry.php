@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 
@@ -15,14 +15,14 @@ class AgentToolRegistry {
   /**
    * Site context assembler.
    *
-   * @var \Drupal\ai_copilot\Service\SiteContextAssembler
+   * @var \Drupal\contribot\Service\SiteContextAssembler
    */
   protected $siteContextAssembler;
 
   /**
    * Contrib matcher service.
    *
-   * @var \Drupal\ai_copilot\Service\ContribMatcherService
+   * @var \Drupal\contribot\Service\ContribMatcherService
    */
   protected $contribMatcher;
 
@@ -122,7 +122,7 @@ class AgentToolRegistry {
    *   Subset of site context safe to pass to the LLM.
    */
   protected function runGetSiteContext(): array {
-    $privacyLevel = $this->configFactory->get('ai_copilot.settings')->get('data_privacy_level') ?: 'structure_only';
+    $privacyLevel = $this->configFactory->get('contribot.settings')->get('data_privacy_level') ?: 'structure_only';
     $context = $this->siteContextAssembler->assembleContext($privacyLevel);
 
     return [

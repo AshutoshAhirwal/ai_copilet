@@ -1,18 +1,18 @@
 <?php
 
-namespace Drupal\ai_copilot\Plugin\Tool;
+namespace Drupal\contribot\Plugin\Tool;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\tool\Plugin\ToolBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\ai_copilot\Service\SiteContextAssembler;
+use Drupal\contribot\Service\SiteContextAssembler;
 
 /**
  * Tool plugin for evaluating site context & config diffs.
  *
  * @Tool(
- *   id = "ai_copilot_config_diff",
- *   label = @Translation("AI Copilot Config Diff"),
+ *   id = "contribot_config_diff",
+ *   label = @Translation("Contribot Config Diff"),
  *   description = @Translation("Inspect site configuration schema and return relevant config diff context.")
  * )
  */
@@ -21,7 +21,7 @@ class ConfigDiffTool extends ToolBase implements ContainerFactoryPluginInterface
   /**
    * Site context assembler.
    *
-   * @var \Drupal\ai_copilot\Service\SiteContextAssembler
+   * @var \Drupal\contribot\Service\SiteContextAssembler
    */
   protected $siteContextAssembler;
 
@@ -41,7 +41,7 @@ class ConfigDiffTool extends ToolBase implements ContainerFactoryPluginInterface
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('ai_copilot.site_context_assembler')
+      $container->get('contribot.site_context_assembler')
     );
   }
 

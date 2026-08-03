@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Exception;
+namespace Drupal\contribot\Exception;
 
 /**
  * Thrown when a configured LLM provider call fails or is misconfigured.

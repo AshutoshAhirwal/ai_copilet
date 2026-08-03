@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Plugin\QueueWorker;
+namespace Drupal\contribot\Plugin\QueueWorker;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Queue\QueueWorkerBase;
@@ -8,15 +8,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Process\Process;
 
 /**
- * Processes queued composer update jobs for AI Copilot patches.
+ * Processes queued composer update jobs for Contribot patches.
  *
  * Runs `composer update drupal/{package}` via Symfony Process array arguments
  * so cweagans/composer-patches applies the registered patch entry without
  * blocking the HTTP request that triggered the Apply action.
  *
  * @QueueWorker(
- *   id = "ai_copilot_composer_queue",
- *   title = @Translation("AI Copilot Composer Update"),
+ *   id = "contribot_composer_queue",
+ *   title = @Translation("Contribot Composer Update"),
  *   cron = {"time" = 60}
  * )
  */
@@ -70,7 +70,7 @@ class ComposerUpdateWorker extends QueueWorkerBase implements ContainerFactoryPl
 
     if (!$process->isSuccessful()) {
       $stderr = trim($process->getErrorOutput() ?: $process->getOutput());
-      \Drupal::logger('ai_copilot')->error(
+      \Drupal::logger('contribot')->error(
         'Composer update failed for @package: @err',
         ['@package' => $package, '@err' => $stderr]
       );
@@ -79,7 +79,7 @@ class ComposerUpdateWorker extends QueueWorkerBase implements ContainerFactoryPl
       throw new \RuntimeException(sprintf('composer update %s failed: %s', $package, $stderr));
     }
 
-    \Drupal::logger('ai_copilot')->info(
+    \Drupal::logger('contribot')->info(
       'Composer update succeeded for @package.',
       ['@package' => $package]
     );

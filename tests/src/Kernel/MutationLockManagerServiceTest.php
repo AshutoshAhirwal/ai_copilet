@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\Tests\ai_copilot\Kernel;
+namespace Drupal\Tests\contribot\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Kernel test for MutationLockManagerService.
  *
- * @group ai_copilot
+ * @group contribot
  */
 #[\PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses]
 class MutationLockManagerServiceTest extends KernelTestBase {
@@ -15,14 +15,14 @@ class MutationLockManagerServiceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['ai_copilot'];
+  protected static $modules = ['contribot'];
 
   /**
    * Tests lock acquisition and release.
    */
   public function testAcquireAndReleaseLock(): void {
-    /** @var \Drupal\ai_copilot\Service\MutationLockManagerService $lockManager */
-    $lockManager = \Drupal::service('ai_copilot.mutation_lock_manager');
+    /** @var \Drupal\contribot\Service\MutationLockManagerService $lockManager */
+    $lockManager = \Drupal::service('contribot.mutation_lock_manager');
 
     $acquired = $lockManager->acquireLock(10.0);
     $this->assertTrue($acquired);

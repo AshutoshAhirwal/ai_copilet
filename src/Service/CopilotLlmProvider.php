@@ -1,8 +1,8 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
-use Drupal\ai_copilot\Exception\LlmProviderException;
+use Drupal\contribot\Exception\LlmProviderException;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 
@@ -42,7 +42,7 @@ class CopilotLlmProvider {
    *   API key string, or empty string if unconfigured.
    */
   protected function resolveApiKey(): string {
-    $config = \Drupal::config('ai_copilot.settings');
+    $config = \Drupal::config('contribot.settings');
     $keyId = $config->get('provider_key_id');
     if (!empty($keyId) && \Drupal::hasService('key.repository')) {
       /** @var \Drupal\key\KeyRepositoryInterface $keyRepo */
@@ -59,13 +59,13 @@ class CopilotLlmProvider {
    * Resolves the explicitly configured LLM provider.
    *
    * Provider is never guessed from key shape - it must be explicitly
-   * selected in AI Copilot settings so behavior is predictable.
+   * selected in Contribot settings so behavior is predictable.
    *
    * @return string
    *   One of 'gemini', 'anthropic', 'openai', or '' if unconfigured.
    */
   protected function resolveProvider(): string {
-    $config = \Drupal::config('ai_copilot.settings');
+    $config = \Drupal::config('contribot.settings');
     return (string) ($config->get('llm_provider') ?: '');
   }
 
@@ -82,7 +82,7 @@ class CopilotLlmProvider {
    *   The model identifier to send to the provider API.
    */
   protected function resolveModelName(string $provider): string {
-    $config = \Drupal::config('ai_copilot.settings');
+    $config = \Drupal::config('contribot.settings');
     $override = trim((string) ($config->get('model_name') ?: ''));
     if ($override !== '') {
       return $override;
@@ -181,16 +181,16 @@ class CopilotLlmProvider {
         'gemini' => $this->callGeminiMultiTurn($apiKey, $fullSystem, $messages),
         'anthropic' => $this->callAnthropicMultiTurn($apiKey, $fullSystem, $messages),
         'openai' => $this->callOpenAiMultiTurn($apiKey, $fullSystem, $messages),
-        default => throw new LlmProviderException(sprintf('Unrecognised LLM provider "%s" configured in AI Copilot settings.', $provider)),
+        default => throw new LlmProviderException(sprintf('Unrecognised LLM provider "%s" configured in Contribot settings.', $provider)),
       };
     }
     catch (LlmProviderException $e) {
-      \Drupal::logger('ai_copilot')->error('Chat completion failed: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->error('Chat completion failed: @msg', ['@msg' => $e->getMessage()]);
       throw $e;
     }
     catch (\Throwable $e) {
       $clean = $this->cleanErrorMessage($provider, $e);
-      \Drupal::logger('ai_copilot')->error('Chat completion failed (@type): @msg', [
+      \Drupal::logger('contribot')->error('Chat completion failed (@type): @msg', [
         '@type' => get_class($e),
         '@msg' => $e->getMessage(),
       ]);
@@ -237,16 +237,16 @@ class CopilotLlmProvider {
         'gemini' => $this->callNativeGeminiApi($apiKey, $fullSystemPrompt, $fullUserPrompt),
         'anthropic' => $this->callAnthropicApi($apiKey, $fullSystemPrompt, $fullUserPrompt),
         'openai' => $this->callOpenAiApi($apiKey, $fullSystemPrompt, $fullUserPrompt),
-        default => throw new LlmProviderException(sprintf('Unrecognised LLM provider "%s" configured in AI Copilot settings.', $provider)),
+        default => throw new LlmProviderException(sprintf('Unrecognised LLM provider "%s" configured in Contribot settings.', $provider)),
       };
     }
     catch (LlmProviderException $e) {
-      \Drupal::logger('ai_copilot')->error('LLM call failed: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('contribot')->error('LLM call failed: @msg', ['@msg' => $e->getMessage()]);
       throw $e;
     }
     catch (\Throwable $e) {
       $clean = $this->cleanErrorMessage($provider, $e);
-      \Drupal::logger('ai_copilot')->error('LLM call failed (@type): @msg', [
+      \Drupal::logger('contribot')->error('LLM call failed (@type): @msg', [
         '@type' => get_class($e),
         '@msg' => $e->getMessage(),
       ]);
@@ -540,12 +540,12 @@ class CopilotLlmProvider {
         'gemini' => $this->sendGeminiConversation($apiKey, $history, $tools),
         'anthropic' => $this->sendAnthropicConversation($apiKey, $history, $tools),
         'openai' => $this->sendOpenAiConversation($apiKey, $history, $tools),
-        default => throw new LlmProviderException(sprintf('Unrecognised LLM provider "%s" configured in AI Copilot settings.', $provider)),
+        default => throw new LlmProviderException(sprintf('Unrecognised LLM provider "%s" configured in Contribot settings.', $provider)),
       };
     }
     catch (\Throwable $e) {
       $msg = $e instanceof LlmProviderException ? $e->getMessage() : $this->cleanErrorMessage($provider, $e);
-      \Drupal::logger('ai_copilot')->error('sendConversation failed: @msg', ['@msg' => $msg]);
+      \Drupal::logger('contribot')->error('sendConversation failed: @msg', ['@msg' => $msg]);
       return ['type' => 'error', 'message' => $msg];
     }
   }
@@ -897,7 +897,7 @@ class CopilotLlmProvider {
         $machineName = 'custom_type';
       }
 
-      $configYaml = "langcode: en\nstatus: true\ndependencies: {}\nid: {$machineName}\nname: '{$label}'\ntype: {$machineName}\ndescription: '{$label} content type generated dynamically by AI Copilot.'\nnew_revision: true\npreview_mode: 1\ndisplay_submitted: true\n";
+      $configYaml = "langcode: en\nstatus: true\ndependencies: {}\nid: {$machineName}\nname: '{$label}'\ntype: {$machineName}\ndescription: '{$label} content type generated dynamically by Contribot.'\nnew_revision: true\npreview_mode: 1\ndisplay_submitted: true\n";
 
       return json_encode([
         'demo_mode' => TRUE,
@@ -919,7 +919,7 @@ class CopilotLlmProvider {
 
       $vid = strtolower(preg_replace('/[^a-z0-9_]+/i', '_', $label));
 
-      $configYaml = "langcode: en\nstatus: true\ndependencies: {}\nvid: {$vid}\nname: '{$label}'\ndescription: '{$label} taxonomy vocabulary generated dynamically by AI Copilot.'\nweight: 0\n";
+      $configYaml = "langcode: en\nstatus: true\ndependencies: {}\nvid: {$vid}\nname: '{$label}'\ndescription: '{$label} taxonomy vocabulary generated dynamically by Contribot.'\nweight: 0\n";
 
       return json_encode([
         'demo_mode' => TRUE,
@@ -963,7 +963,7 @@ class CopilotLlmProvider {
           'path' => 'contrib_patch',
           'module' => $modName,
           'reasoning' => sprintf('Requirement matched with maintained contrib module "%s" (%s). Recommending contrib module plus scoped patch.', $title, $modName),
-          'patch_content' => sprintf("diff --git a/%s.module b/%s.module\nindex 0000000..1111111 100644\n--- a/%s.module\n+++ b/%s.module\n@@ -1,3 +1,6 @@\n+/**\n+ * AI Copilot scoped enhancement for %s.\n+ */\n", $modName, $modName, $modName, $modName, $title),
+          'patch_content' => sprintf("diff --git a/%s.module b/%s.module\nindex 0000000..1111111 100644\n--- a/%s.module\n+++ b/%s.module\n@@ -1,3 +1,6 @@\n+/**\n+ * Contribot scoped enhancement for %s.\n+ */\n", $modName, $modName, $modName, $modName, $title),
         ]);
       }
     }
@@ -979,7 +979,7 @@ class CopilotLlmProvider {
       'demo_mode' => TRUE,
       'path' => 'custom_code',
       'reasoning' => sprintf('Requirement "%s" requires custom PHP logic because no matching contrib module or pure config option exists.', $promptTrimmed),
-      'custom_code' => "/**\n * Implements custom logic for: {$promptTrimmed}\n */\nfunction ai_copilot_generated_{$funcName}() {\n  // Dynamic custom implementation\n}\n",
+      'custom_code' => "/**\n * Implements custom logic for: {$promptTrimmed}\n */\nfunction contribot_generated_{$funcName}() {\n  // Dynamic custom implementation\n}\n",
     ]);
   }
 

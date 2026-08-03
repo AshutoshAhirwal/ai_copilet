@@ -2,9 +2,9 @@ chat_panel:
   version: 1.0.0
   css:
     theme:
-      css/ai-copilot-panel.css: {}
+      css/contribot-panel.css: {}
   js:
-    js/ai-copilot-panel.js: {}
+    js/contribot-panel.js: {}
   dependencies:
     - core/drupal
     - core/drupalSettings

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Queue\QueueFactory;
@@ -50,7 +50,7 @@ class ComposerPatchManagerService {
       ];
     }
 
-    $patchDir = 'private://ai_copilot/patches';
+    $patchDir = 'private://contribot/patches';
     $fileSystem = \Drupal::service('file_system');
     $fileSystem->prepareDirectory($patchDir, FileSystemInterface::CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS);
 
@@ -62,7 +62,7 @@ class ComposerPatchManagerService {
     if (file_exists($rootComposerJson)) {
       $composerData = json_decode(file_get_contents($rootComposerJson), TRUE) ?: [];
       $packageKey = 'drupal/' . $projectName;
-      $relativePatchPath = 'private/ai_copilot/patches/' . $fileName;
+      $relativePatchPath = 'private/contribot/patches/' . $fileName;
 
       if (!isset($composerData['extra'])) {
         $composerData['extra'] = [];
@@ -80,7 +80,7 @@ class ComposerPatchManagerService {
     }
 
     // Enqueue background composer update job via Queue API to avoid HTTP request timeouts.
-    $queue = $this->queueFactory->get('ai_copilot_composer_queue');
+    $queue = $this->queueFactory->get('contribot_composer_queue');
     $queue->createItem([
       'action' => 'composer_update',
       'package' => 'drupal/' . $projectName,

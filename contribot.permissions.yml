@@ -1,0 +1,9 @@
+use contribot:
+  title: 'Use Contribot'
+  description: 'Access the in-admin Contribot developer assistant panel and trigger site inspection or mutation workflows.'
+  restrict access: true
+
+administer contribot:
+  title: 'Administer Contribot'
+  description: 'Configure Developer Mode, security presets, provider settings, and data privacy levels for Contribot.'
+  restrict access: true

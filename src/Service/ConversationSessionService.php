@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Service;
+namespace Drupal\contribot\Service;
 
 use Drupal\Core\TempStore\PrivateTempStoreFactory;
 
@@ -10,7 +10,7 @@ use Drupal\Core\TempStore\PrivateTempStoreFactory;
 class ConversationSessionService {
 
   /**
-   * TempStore instance keyed to the ai_copilot_chat collection.
+   * TempStore instance keyed to the contribot_chat collection.
    *
    * @var \Drupal\Core\TempStore\PrivateTempStore
    */
@@ -20,7 +20,7 @@ class ConversationSessionService {
    * Constructs a ConversationSessionService.
    */
   public function __construct(PrivateTempStoreFactory $tempStoreFactory) {
-    $this->store = $tempStoreFactory->get('ai_copilot_chat');
+    $this->store = $tempStoreFactory->get('contribot_chat');
   }
 
   /**

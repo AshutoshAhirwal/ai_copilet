@@ -44,7 +44,7 @@ jobs:
       - name: Checkout module
         uses: actions/checkout@v4
         with:
-          path: ai_copilot_checkout
+          path: contribot_checkout
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -57,7 +57,7 @@ jobs:
       - name: Scaffold a throwaway Drupal site
         run: |
           composer create-project drupal/recommended-project:${{ matrix.core-version }} drupal_site --no-interaction --stability dev
-          cp -r ai_copilot_checkout drupal_site/web/modules/custom/ai_copilot
+          cp -r contribot_checkout drupal_site/web/modules/custom/contribot
 
       - name: Require module dependencies
         working-directory: drupal_site
@@ -72,4 +72,4 @@ jobs:
           SYMFONY_DEPRECATIONS_HELPER: disabled
         run: |
           mkdir -p sites/default/files
-          vendor/bin/phpunit -c web/core web/modules/custom/ai_copilot/tests
+          vendor/bin/phpunit -c web/core web/modules/custom/contribot/tests

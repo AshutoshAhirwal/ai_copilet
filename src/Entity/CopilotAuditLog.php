@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\ai_copilot\Entity;
+namespace Drupal\contribot\Entity;
 
 use Drupal\Core\Entity\Attribute\ContentEntityType;
 use Drupal\Core\Entity\ContentEntityBase;
@@ -13,9 +13,9 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  */
 #[ContentEntityType(
   id: 'copilot_audit_log',
-  label: new TranslatableMarkup('AI Copilot Audit Log'),
-  label_collection: new TranslatableMarkup('AI Copilot Audit Logs'),
-  base_table: 'ai_copilot_audit_log',
+  label: new TranslatableMarkup('Contribot Audit Log'),
+  label_collection: new TranslatableMarkup('Contribot Audit Logs'),
+  base_table: 'contribot_audit_log',
   entity_keys: [
     'id' => 'id',
     'uuid' => 'uuid',
